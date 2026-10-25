@@ -1,0 +1,1519 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Simulateur de commande · reels IA · MSA GROUP CONDOR</title>
+<meta name="description" content="Simulateur de prix pour la commande de reels IA, MSA GROUP CONDOR.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#EFEBE4">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Marque */
+  --os:#EFEBE4;          /* fond */
+  --encre:#0D0E11;       /* texte */
+  --cuivre:#B4541E;      /* accent unique */
+  --acier:#6B7280;       /* texte secondaire */
+  --sable:#DCD5C9;       /* bordures */
+  /* Dérivés */
+  --muted:#5F6573;       /* Acier assombri : contraste AA sur fond clair */
+  --os-deep:#E4DED4;     /* fond autour du cadre (bureau) */
+  --on-dark:#EFEBE4;
+  --on-dark-2:#B3AEA6;   /* texte secondaire sur carte sombre (contraste > 7:1) */
+  --glass:rgba(255,255,255,.58);
+  --glass-strong:rgba(255,255,255,.78);
+  --glass-line:rgba(255,255,255,.85);
+  --shadow:0 1px 0 rgba(255,255,255,.9) inset, 0 1px 2px rgba(13,14,17,.04), 0 14px 36px -16px rgba(13,14,17,.18);
+  --blur:saturate(160%) blur(22px);
+  --r-xl:32px; --r-lg:24px; --r-md:18px;
+  --ease:cubic-bezier(.2,.7,.2,1);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;overscroll-behavior-y:contain}
+body{margin:0;background:var(--os);color:var(--encre);font-family:Montserrat,system-ui,-apple-system,"Segoe UI",sans-serif;font-size:16px;line-height:1.5;overflow-x:hidden;overscroll-behavior-y:contain;padding-bottom:96px;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:"Archivo Black",Montserrat,sans-serif;font-weight:400;line-height:1.15;margin:0;letter-spacing:-.01em}
+h1{font-size:clamp(1.5rem,4.4vw,2.35rem)}
+h2{font-size:1.15rem}
+h3{font-size:1rem}
+p{margin:0}
+.muted{color:var(--muted)}
+.small{font-size:.875rem}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--encre);outline-offset:2px}
+svg{display:block}
+[hidden]{display:none!important}
+.print-only{display:none}
+
+/* ---------- Cadre ---------- */
+/* overflow:clip (et non hidden) : coupe les halos sans casser le « sticky » du récapitulatif */
+.frame{position:relative;isolation:isolate;overflow:clip;padding:0 16px}
+#commande,#services,#recap,#etapes{scroll-margin-top:24px}
+/* Halos doux derrière le verre */
+.frame::before,.frame::after{content:"";position:absolute;z-index:-1;border-radius:50%;filter:blur(70px);pointer-events:none}
+.frame::before{width:520px;height:520px;left:-220px;top:-180px;background:rgba(180,84,30,.16)}
+.frame::after{width:560px;height:560px;right:-260px;top:40%;background:rgba(220,213,201,.9)}
+.content{min-width:0}
+
+@media (min-width:960px){
+  body{background:var(--os-deep);padding:24px;padding-bottom:24px}
+  .frame{max-width:1360px;margin:0 auto;background:var(--os);border-radius:40px;padding:28px 36px 0;box-shadow:0 1px 0 rgba(255,255,255,.7) inset,0 40px 80px -40px rgba(13,14,17,.35)}
+}
+
+/* Barre du haut : une ligne compacte */
+.topbar{display:flex;align-items:center;gap:10px;padding:12px 0 0}
+.mark{width:32px;height:32px;border-radius:50%;background:var(--encre);color:var(--os);display:grid;place-items:center;font-family:"Archivo Black",sans-serif;font-size:.68rem;flex:none}
+.who{font-size:.85rem;line-height:1.25}
+.who strong{font-weight:600}
+.hello{margin-left:auto;display:flex;align-items:center;gap:10px;font-weight:600;font-size:.9rem}
+.avatar{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--glass-strong);border:1px solid var(--glass-line);box-shadow:var(--shadow);font-weight:700;font-size:.8rem}
+@media (max-width:480px){.hello .txt{display:none}}
+@media (min-width:960px){.topbar{padding-top:0}}
+
+.page-head{padding:14px 0 0}
+.page-head h1{font-size:clamp(1.3rem,5.2vw,2.35rem)}
+.page-head .lede{margin-top:6px;max-width:60ch;font-size:.9rem}
+@media (min-width:960px){.page-head{padding:24px 0 4px}.page-head .lede{font-size:1rem}}
+.mode-hint{margin-top:10px;max-width:62ch}
+
+/* ---------- Surfaces en verre ----------
+   Les cartes restent translucides sans flou (plus léger sur Android milieu de gamme).
+   Le flou est réservé à .blur : onglets du haut, barre mobile, message « Annuler ». */
+.glass,.card{background:rgba(255,255,255,.72);border:1px solid var(--glass-line);box-shadow:var(--shadow)}
+.blur{background:var(--glass);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur)}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.blur{background:var(--glass-strong)}}
+.card{border-radius:var(--r-lg);padding:22px}
+@media (max-width:420px){.card{padding:18px}}
+
+/* Mise en page */
+.layout{display:grid;grid-template-columns:minmax(0,1fr);gap:24px;padding:16px 0 40px}
+@media (min-width:960px){
+  .layout{grid-template-columns:minmax(0,1fr) 400px;align-items:start;gap:28px;padding-top:20px}
+  .recap{position:sticky;top:24px;max-height:calc(100vh - 48px);overflow:auto;scrollbar-width:thin}
+}
+.stack>*+*{margin-top:24px}
+.section-title{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px}
+
+.badge{display:inline-flex;align-items:center;min-height:24px;padding:2px 10px;border-radius:999px;background:var(--encre);color:var(--os);font-size:.72rem;font-weight:700;white-space:nowrap}
+
+/* Interrupteur de mode (pilules) */
+.tabs{display:inline-grid;grid-auto-flow:column;gap:4px;padding:5px;border-radius:999px;width:100%;max-width:440px}
+.tabs input{position:absolute;opacity:0;width:1px;height:1px}
+.tabs label{display:flex;align-items:center;justify-content:center;min-height:46px;padding:8px 18px;border-radius:999px;font-weight:600;font-size:.92rem;cursor:pointer;transition:background .25s var(--ease),color .25s var(--ease)}
+.tabs label:hover{background:rgba(255,255,255,.7)}
+.tabs input:checked+label{background:var(--encre);color:var(--os);box-shadow:0 6px 16px -6px rgba(13,14,17,.5)}
+.tabs input:focus-visible+label{outline:3px solid var(--encre);outline-offset:2px}
+
+/* Volets repliables */
+details>summary{list-style:none;cursor:pointer}
+details>summary::-webkit-details-marker{display:none}
+.chev{width:34px;height:34px;border-radius:50%;flex:none;display:grid;place-items:center;background:rgba(255,255,255,.75);border:1px solid var(--glass-line);box-shadow:0 1px 2px rgba(13,14,17,.06)}
+.chev::before{content:"";width:8px;height:8px;border-right:2px solid var(--encre);border-bottom:2px solid var(--encre);transform:translateY(-2px) rotate(45deg);transition:transform .25s var(--ease)}
+details[open]>summary .chev::before{transform:translateY(2px) rotate(-135deg)}
+
+.inclus>summary{display:flex;align-items:center;gap:12px;min-height:44px}
+.inclus>summary>span:first-child{flex:1;min-width:0}
+.inclus .teaser{display:block;font-size:.85rem;color:var(--muted);margin-top:4px}
+details.inclus[open] .teaser{display:none}
+.inclus ul{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:8px}
+@media (min-width:640px){.inclus ul{grid-template-columns:1fr 1fr;column-gap:24px}}
+.inclus li{position:relative;padding-left:22px;font-size:.92rem}
+.inclus li::before{content:"";position:absolute;left:0;top:.42em;width:12px;height:12px;border-radius:50%;background:var(--encre);-webkit-mask:radial-gradient(circle,#000 2.5px,transparent 3px);mask:radial-gradient(circle,#000 2.5px,transparent 3px)}
+.inclus .mc{grid-column:1/-1}
+
+/* Contrôles segmentés */
+fieldset{border:0;margin:0;padding:0;min-width:0}
+legend{padding:0;font-weight:600;font-size:.85rem;margin-bottom:8px}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px}
+.seg input{position:absolute;opacity:0;width:1px;height:1px}
+.seg label{display:flex;align-items:center;justify-content:center;text-align:center;min-height:46px;padding:8px 10px;border:1px solid var(--sable);border-radius:999px;background:rgba(255,255,255,.7);font-size:.86rem;font-weight:500;cursor:pointer;line-height:1.15;transition:background .2s var(--ease),color .2s var(--ease),border-color .2s var(--ease)}
+.seg label small{display:block;font-size:.7rem;font-weight:500;opacity:.85;margin-top:1px}
+.seg label:hover{border-color:var(--encre)}
+.seg input:checked+label{background:var(--encre);border-color:var(--encre);color:var(--os)}
+.seg input:focus-visible+label{outline:3px solid var(--encre);outline-offset:2px}
+
+/* Interrupteurs type iOS */
+.check{display:flex;gap:14px;align-items:center;padding:12px 0;cursor:pointer}
+.check+.check,.check.sep{border-top:1px solid rgba(220,213,201,.8)}
+.check .lbl{flex:1;min-width:0;font-weight:500}
+.check .lbl .small{font-weight:400}
+.check .amt{font-weight:600;white-space:nowrap}
+.check input{appearance:none;-webkit-appearance:none;margin:0;flex:none;width:48px;height:30px;border-radius:999px;background:var(--sable);position:relative;cursor:pointer;transition:background .25s var(--ease);order:3}
+.check input::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(13,14,17,.25);transition:transform .25s var(--ease)}
+.check input:checked{background:var(--encre)}
+.check input:checked::after{transform:translateX(18px)}
+.check input:disabled{cursor:not-allowed}
+.check.is-disabled{cursor:not-allowed}
+.check.is-disabled .lbl,.check.is-disabled .amt,.check.is-disabled input{opacity:.5}
+.check .ph{width:48px;flex:none;order:3}
+
+/* Cartes reel */
+.reels{display:grid;gap:12px}
+.reel.card{padding:0;border-radius:var(--r-md)}
+.reel>summary{display:flex;align-items:center;gap:12px;padding:14px 14px 14px 18px;min-height:72px}
+.reel .num{width:40px;height:40px;border-radius:50%;flex:none;display:grid;place-items:center;background:var(--encre);color:var(--os);font-family:"Archivo Black",sans-serif;font-size:.8rem}
+.reel .s-main{flex:1;min-width:0}
+.reel .s-main h3{font-family:Montserrat,sans-serif;font-weight:700;font-size:.95rem}
+.reel .s-desc{display:block;font-size:.8rem;color:var(--muted);margin-top:1px}
+.reel .reel-price{font-weight:600;white-space:nowrap;font-size:.95rem}
+.reel .body{display:grid;gap:16px;padding:16px 18px 6px;border-top:1px solid rgba(220,213,201,.8)}
+.reel .actions{display:flex;gap:24px;border-top:1px solid rgba(220,213,201,.8)}
+@media (max-width:420px){.reel>summary{padding:12px 12px 12px 14px;gap:10px}.reel .num{width:34px;height:34px}.reel .body{padding:14px 14px 4px}}
+.btn-link{background:none;border:0;padding:8px 0;font:inherit;font-size:.875rem;font-weight:500;text-decoration:underline;text-underline-offset:3px;cursor:pointer;color:var(--encre);min-height:44px}
+
+/* ---------- Boutons pilule ---------- */
+.btn{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:52px;padding:12px 24px;border-radius:999px;font:inherit;font-weight:600;font-size:.95rem;text-decoration:none;cursor:pointer;border:1px solid var(--encre);background:var(--encre);color:var(--os);text-align:center;transition:transform .2s var(--ease),box-shadow .2s var(--ease),background .2s var(--ease)}
+.btn:hover{transform:translateY(-1px);box-shadow:0 10px 24px -10px rgba(13,14,17,.55)}
+.btn:active{transform:scale(.98)}
+.btn[aria-disabled="true"],.btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+
+/* Pilule de verre (inspirée du bouton « Upload ») : anneau extérieur + reflet animé aux extrémités */
+@property --sheen{syntax:"<angle>";inherits:false;initial-value:0deg}
+.btn-glass{background:linear-gradient(180deg,#fff 0%,#F5F2ED 100%);color:var(--encre);border:1px solid rgba(255,255,255,.95);box-shadow:inset 0 1px 0 #fff,inset 0 -3px 8px rgba(13,14,17,.06),0 0 0 5px rgba(255,255,255,.28),0 0 0 6px rgba(13,14,17,.06),0 12px 28px -12px rgba(13,14,17,.45)}
+.btn-glass::before{content:"";position:absolute;inset:-2px;border-radius:inherit;padding:2px;pointer-events:none;
+  background:conic-gradient(from var(--sheen),transparent 0deg 62deg,rgba(180,84,30,.95) 76deg,#fff 84deg,rgba(220,213,201,1) 92deg,rgba(107,114,128,.7) 100deg,transparent 114deg 242deg,rgba(180,84,30,.85) 256deg,#fff 264deg,rgba(220,213,201,1) 272deg,transparent 290deg 360deg);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);
+  animation:sheen 5s linear infinite}
+.btn-glass:hover{background:#fff;box-shadow:inset 0 1px 0 #fff,inset 0 -3px 8px rgba(13,14,17,.06),0 0 0 5px rgba(255,255,255,.4),0 0 0 6px rgba(13,14,17,.08),0 16px 32px -12px rgba(13,14,17,.5)}
+.btn-glass.static::before{display:none}
+@keyframes sheen{to{--sheen:360deg}}
+.btn .ico{width:20px;height:20px;flex:none}
+
+.add-reel{width:100%;margin-top:16px}
+.notice{border:1px solid var(--encre);border-radius:var(--r-md);padding:12px 16px;font-size:.9rem;background:var(--glass-strong)}
+.hint{margin-top:10px;text-align:center}
+.carte-min{margin-top:12px}
+.suggest{margin-top:16px;padding:18px;border-radius:var(--r-lg);display:grid;gap:14px;font-size:.92rem}
+.suggest .btn{justify-self:start}
+
+/* Packs */
+.packs{display:grid;gap:10px;grid-template-columns:repeat(3,1fr)}
+.packs input{position:absolute;opacity:0;width:1px;height:1px}
+.packs label{position:relative;isolation:isolate;display:flex;flex-direction:column;gap:2px;padding:14px 12px;border:1px solid var(--sable);border-radius:var(--r-md);background:rgba(255,255,255,.7);cursor:pointer;min-height:104px;transition:background .25s var(--ease),color .25s var(--ease),transform .2s var(--ease)}
+.packs label:hover{border-color:var(--encre);transform:translateY(-1px)}
+.packs .p-size{font-family:"Archivo Black",sans-serif;font-size:1.15rem}
+.packs .p-disc{font-size:.85rem;font-weight:600}
+.packs .p-reco{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-top:auto}
+/* Choix sélectionné : Encre. L'orange est réservé à l'option recommandée quand elle est choisie
+   (pack 8, onglet Pack mensuel, répartition Moitié-moitié). Dégradé statique, sans animation. */
+.packs input:checked+label{background:var(--encre);border-color:var(--encre);color:var(--os);box-shadow:0 12px 24px -12px rgba(13,14,17,.6);transform:translateY(-2px)}
+.packs input:checked+label.reco,
+.tabs #mode-pack:checked+label,
+.chip[data-preset="half"][aria-pressed="true"]{color:var(--os);border-color:transparent;
+  background:radial-gradient(120% 95% at 100% 0%,rgba(214,112,52,1) 0%,rgba(180,84,30,.95) 28%,rgba(180,84,30,.35) 62%,rgba(180,84,30,0) 85%),linear-gradient(160deg,#2A1A12 0%,var(--encre) 70%);
+  box-shadow:0 1px 0 rgba(255,255,255,.18) inset,0 16px 30px -14px rgba(180,84,30,.75)}
+.packs input:focus-visible+label{outline:3px solid var(--encre);outline-offset:2px}
+.perks ul{margin:6px 0 0;padding-left:18px;display:grid;gap:2px}
+.perks{border-radius:var(--r-md);padding:12px 16px;background:rgba(255,255,255,.7);border:1px solid var(--sable);font-size:.9rem}
+
+.split{display:grid;gap:12px}
+.split-read{display:flex;justify-content:space-between;gap:12px;font-weight:600;font-size:.95rem}
+/* Curseur de répartition : remplissage qui suit le pouce, bulle de valeur, graduations */
+.range-wrap{--t:.5;--thumb:30px;position:relative;padding-top:38px}
+.range-pos{left:calc(var(--thumb)/2 + var(--t) * (100% - var(--thumb)))}
+.range-bubble{position:absolute;top:0;transform:translateX(-50%);padding:4px 12px;border-radius:999px;background:var(--encre);color:var(--os);font-size:.8rem;font-weight:700;white-space:nowrap;pointer-events:none;transition:left .12s var(--ease),transform .2s var(--ease);box-shadow:0 6px 14px -6px rgba(13,14,17,.5)}
+.range-bubble::after{content:"";position:absolute;left:50%;bottom:-4px;width:8px;height:8px;background:inherit;transform:translateX(-50%) rotate(45deg);border-radius:1px}
+.range-wrap.dragging .range-bubble{transform:translateX(-50%) scale(1.08)}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:44px;margin:0;background:transparent;cursor:pointer;touch-action:pan-y}
+input[type=range]::-webkit-slider-runnable-track{height:12px;border-radius:999px;border:1px solid var(--sable);
+  background:linear-gradient(90deg,var(--cuivre),var(--encre)) 0 0/calc(var(--thumb)/2 + var(--t) * (100% - var(--thumb))) 100% no-repeat,rgba(255,255,255,.85);
+  box-shadow:inset 0 1px 2px rgba(13,14,17,.08)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:var(--thumb);height:var(--thumb);margin-top:-10px;border-radius:50%;background:#fff;border:1px solid rgba(220,213,201,.9);
+  box-shadow:0 0 0 4px rgba(255,255,255,.55),0 4px 12px rgba(13,14,17,.28);transition:transform .15s var(--ease)}
+input[type=range]:active::-webkit-slider-thumb{transform:scale(1.15)}
+input[type=range]::-moz-range-track{height:12px;border-radius:999px;border:1px solid var(--sable);background:rgba(255,255,255,.85)}
+input[type=range]::-moz-range-progress{height:12px;border-radius:999px;background:linear-gradient(90deg,var(--cuivre),var(--encre))}
+input[type=range]::-moz-range-thumb{width:var(--thumb);height:var(--thumb);border-radius:50%;background:#fff;border:1px solid rgba(220,213,201,.9);box-shadow:0 0 0 4px rgba(255,255,255,.55),0 4px 12px rgba(13,14,17,.28)}
+input[type=range]:focus-visible{outline:none}
+input[type=range]:focus-visible::-webkit-slider-thumb{outline:3px solid var(--encre);outline-offset:3px}
+input[type=range]:focus-visible::-moz-range-thumb{outline:3px solid var(--encre);outline-offset:3px}
+.ticks{position:relative;height:10px;margin-top:-4px}
+.ticks i{position:absolute;top:0;width:2px;height:6px;border-radius:1px;background:var(--sable);transform:translateX(-50%)}
+.ticks i.on{background:var(--encre)}
+.presets{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-height:42px;padding:8px 16px;border:1px solid var(--sable);border-radius:999px;background:rgba(255,255,255,.7);font:inherit;font-size:.85rem;font-weight:600;cursor:pointer;color:var(--encre);transition:background .2s var(--ease),color .2s var(--ease)}
+.chip:hover{border-color:var(--encre)}
+.chip[aria-pressed="true"]{background:var(--encre);border-color:var(--encre);color:var(--os)}
+
+.steppers{display:grid}
+.stepper{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid rgba(220,213,201,.8)}
+.stepper:first-child{border-top:0}
+.stepper label{flex:1;font-size:.92rem;font-weight:500}
+.stepper label small{display:block;color:var(--muted);font-size:.8rem;font-weight:400}
+.stepper .ctl{display:flex;align-items:center;border:1px solid var(--sable);border-radius:999px;background:rgba(255,255,255,.75);flex:none;padding:2px}
+.stepper button{width:42px;height:42px;border-radius:50%;border:0;background:none;font:inherit;font-size:1.2rem;cursor:pointer;color:var(--encre)}
+.stepper button:not(:disabled):hover{background:var(--os)}
+.stepper button:disabled{opacity:.3;cursor:not-allowed}
+.stepper input{width:34px;height:42px;border:0;text-align:center;font:inherit;font-weight:700;background:transparent;color:var(--encre);-moz-appearance:textfield;appearance:textfield}
+.stepper input::-webkit-inner-spin-button,.stepper input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.stepper.is-disabled label{opacity:.5}
+.sub-h{font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;margin:20px 0 2px}
+
+/* ---------- Récapitulatif : carte sombre, halo cuivre ---------- */
+.recap{position:relative;isolation:isolate;border-radius:var(--r-xl);padding:22px;color:var(--on-dark);
+  background:
+    radial-gradient(130% 60% at 0% 0%,rgba(180,84,30,.95) 0%,rgba(180,84,30,.45) 32%,rgba(180,84,30,0) 62%),
+    radial-gradient(80% 40% at 100% 100%,rgba(180,84,30,.28),rgba(180,84,30,0) 70%),
+    var(--encre);
+  box-shadow:0 1px 0 rgba(255,255,255,.12) inset,0 0 0 1px rgba(255,255,255,.06) inset,0 40px 70px -30px rgba(13,14,17,.55)}
+.recap::-webkit-scrollbar{width:6px}.recap::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:3px}
+.r-top{display:flex;align-items:center;gap:10px}
+.r-ico{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);flex:none}
+.recap h2{font-family:Montserrat,sans-serif;font-weight:600;font-size:.95rem;letter-spacing:0}
+.r-pill{margin-left:auto;display:inline-flex;align-items:center;min-height:40px;padding:6px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.4);background:rgba(255,255,255,.08);font-size:.8rem;font-weight:600;white-space:nowrap}
+.hero{margin-top:34px}
+.hero .k{font-size:.8rem;font-weight:600;color:var(--on-dark-2);text-transform:uppercase;letter-spacing:.08em}
+.hero .t-val{display:flex;align-items:flex-start;gap:8px;margin-top:6px;font-weight:300;font-size:clamp(2.6rem,12vw,3.9rem);line-height:1;letter-spacing:-.04em;white-space:nowrap;color:var(--on-dark)}
+.hero .t-val small{font-size:.32em;font-weight:500;letter-spacing:.02em;margin-top:.35em}
+.hero .t-val .arrow{width:.36em;height:.36em;margin-top:.1em;opacity:.9}
+.hero .t-sub{margin-top:14px;font-weight:700;font-size:.95rem}
+.hero .t-sub2{font-size:.92rem;color:var(--on-dark-2);margin-top:2px}
+.dashes{display:flex;gap:6px;margin-top:22px;flex-wrap:wrap}
+.dashes i{flex:1 1 14px;min-width:14px;height:4px;border-radius:2px;background:var(--on-dark)}
+.dashes i.b{background:rgba(239,235,228,.32)}
+.dashes i.v{background:transparent;box-shadow:inset 0 0 0 1px rgba(239,235,228,.7)}
+.legend{display:flex;gap:16px;margin-top:10px;font-size:.78rem;color:var(--on-dark-2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend span::before{content:"";width:14px;height:4px;border-radius:2px;background:var(--on-dark)}
+.legend span.b::before{background:rgba(239,235,228,.32)}
+.legend span.v::before{background:transparent;box-shadow:inset 0 0 0 1px rgba(239,235,228,.7)}
+
+.r-sec{margin-top:22px;padding:4px 16px;border-radius:var(--r-md);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09)}
+.r-sec h3{font-family:Montserrat,sans-serif;font-weight:700;font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--on-dark-2);padding-top:12px}
+.lines{list-style:none;margin:6px 0 0;padding:0}
+.lines li{display:flex;gap:12px;justify-content:space-between;padding:10px 0;border-top:1px solid rgba(255,255,255,.1);font-size:.88rem}
+.lines li:first-child{border-top:0}
+.lines li .v{white-space:nowrap;font-weight:600}
+.lines li .d{min-width:0}
+.lines li .d small{display:block;color:var(--on-dark-2);font-size:.78rem}
+.subtotal{display:flex;justify-content:space-between;padding:12px 0;border-top:1px solid rgba(255,255,255,.35);font-weight:700;font-size:.92rem}
+.compare{margin-top:12px;padding:12px 16px;border-radius:var(--r-md);background:rgba(239,235,228,.1);border:1px solid rgba(255,255,255,.14);font-size:.86rem}
+.compare strong{white-space:nowrap}
+.rec-total{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:4px 12px;margin-top:18px}
+.rec-total>div:first-child{flex:1 1 170px}
+.rec-total .t-label{font-weight:700;font-size:.92rem}
+.rec-total .t-sub{font-size:.76rem;color:var(--on-dark-2)}
+.rec-total .t-val{font-weight:300;font-size:1.6rem;letter-spacing:-.03em;white-space:nowrap}
+.delivery{margin-top:16px;font-size:.86rem;color:var(--on-dark-2)}
+.r-legal{margin-top:6px;font-size:.76rem;line-height:1.45;color:var(--on-dark-2)}
+.rec-total+.r-legal{margin-top:14px}
+.recap .notice{margin-top:20px;background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.4);color:var(--on-dark)}
+.brief{display:grid;gap:8px;margin-top:20px}
+.brief .note{font-size:.76rem;color:var(--on-dark-2);text-align:center}
+.cta{display:grid;gap:12px;margin-top:24px}
+.cta .btn-glass{min-height:58px}
+.btn-ghost-dark{background:transparent;border:1px solid rgba(255,255,255,.4);color:var(--on-dark)}
+.btn-ghost-dark:hover{background:rgba(255,255,255,.1);box-shadow:none}
+.cta .note{font-size:.76rem;color:var(--on-dark-2);text-align:center}
+.recap :focus-visible{outline-color:var(--on-dark)}
+
+/* Barre mobile flottante */
+.minibar{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));border-radius:22px;padding:10px 10px 10px 18px;display:flex;align-items:center;gap:12px;z-index:10;transition:transform .3s var(--ease),opacity .3s var(--ease);background:rgba(255,255,255,.72);-webkit-backdrop-filter:var(--blur);backdrop-filter:var(--blur);border:1px solid var(--glass-line);box-shadow:0 18px 40px -16px rgba(13,14,17,.35)}
+.minibar .mb-l{font-size:.72rem;font-weight:600;line-height:1.2}
+.minibar .mb-v{font-size:1.25rem;font-weight:700;color:var(--cuivre);white-space:nowrap;letter-spacing:-.02em}
+.minibar a{margin-left:auto;font-size:.85rem;font-weight:600;min-height:44px;display:flex;align-items:center;padding:0 16px;border-radius:999px;background:var(--encre);color:var(--os);text-decoration:none}
+.minibar.hide{transform:translateY(140%);opacity:0}
+@media (min-width:960px){.minibar{display:none}}
+
+/* Toast */
+.toast{position:fixed;left:16px;right:16px;bottom:calc(92px + env(safe-area-inset-bottom));max-width:420px;margin:0 auto;background:rgba(13,14,17,.88);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);color:var(--os);border-radius:18px;padding:8px 8px 8px 18px;display:flex;align-items:center;gap:12px;z-index:20;font-size:.9rem;box-shadow:0 16px 36px -12px rgba(13,14,17,.5)}
+.toast button{margin-left:auto;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.5);color:var(--os);border-radius:999px;min-height:44px;padding:6px 18px;font:inherit;font-weight:600;cursor:pointer}
+.toast button:focus-visible{outline-color:var(--os)}
+@media (min-width:960px){.toast{bottom:32px}}
+
+/* Comment ça se passe */
+.how{padding:24px 0 40px}
+.steps{list-style:none;counter-reset:s;margin:18px 0 0;padding:0;display:grid;gap:12px}
+@media (min-width:720px){.steps{grid-template-columns:repeat(3,1fr)}}
+.steps li{counter-increment:s;border-radius:var(--r-md);padding:18px}
+.steps li::before{content:counter(s,decimal-leading-zero);display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:var(--encre);color:var(--os);font-family:"Archivo Black",sans-serif;font-size:.75rem;margin-bottom:12px}
+.steps strong{display:block;margin-bottom:4px}
+.steps p{font-size:.88rem;color:var(--muted)}
+.steps .short{display:none}
+.how.js-stepper .steps{display:none}
+/* Bureau : les six étapes d un coup, en frise horizontale */
+@media (min-width:960px){
+  .how .stepper-ui{display:none}
+  .how .steps,.how.js-stepper .steps{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:16px;position:relative;margin-top:28px}
+  .how .steps::before{content:"";position:absolute;top:17px;height:2px;left:calc((100% - 80px) / 12);right:calc((100% - 80px) / 12);background:var(--sable);border-radius:1px}
+  .how .steps li{background:none;border:0;box-shadow:none;padding:0;text-align:center;position:relative}
+  .how .steps li::before{margin:0 auto 12px;box-shadow:0 0 0 6px var(--os)}
+  .how .steps strong{font-size:.92rem}
+  .how .steps .full{display:none}
+  .how .steps .short{display:block;font-size:.84rem}
+}
+
+/* Parcours étape par étape */
+.how-head{text-align:center;display:grid;justify-items:center;gap:12px}
+.badge.soft{background:rgba(255,255,255,.75);color:var(--encre);border:1px solid var(--sable);min-height:30px;padding:4px 14px;font-size:.78rem}
+.stepper-ui{max-width:640px;margin:24px auto 0}
+.st-track{position:relative;display:grid;justify-items:center}
+.st-dots{display:flex;justify-content:center;gap:8px;position:relative;z-index:1}
+.st-dot{width:44px;height:44px;border-radius:14px;border:2px solid var(--sable);background:rgba(255,255,255,.75);color:var(--muted);font:inherit;font-weight:700;font-size:.9rem;display:grid;place-items:center;cursor:pointer;
+  transition:transform .25s var(--ease),background .25s var(--ease),color .25s var(--ease),border-color .25s var(--ease),box-shadow .25s var(--ease)}
+.st-dot:hover{border-color:var(--encre);color:var(--encre)}
+.st-dot.done{background:var(--encre);border-color:var(--encre);color:var(--os)}
+.st-dot[aria-current="step"]{background:#fff;border-color:var(--encre);color:var(--encre);transform:scale(1.12);box-shadow:0 0 0 4px rgba(255,255,255,.6),0 8px 18px -8px rgba(13,14,17,.45)}
+.st-dot svg{width:18px;height:18px}
+.st-progress{width:min(100%,304px);height:3px;margin-top:14px;border-radius:2px;background:var(--sable);overflow:hidden}
+.st-progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--cuivre),var(--encre));border-radius:inherit;transition:width .35s var(--ease)}
+.st-card{margin-top:20px;border-radius:var(--r-lg);padding:30px 24px;min-height:210px;text-align:center;display:grid;align-content:center;justify-items:center;gap:10px;touch-action:pan-y;user-select:none;cursor:grab}
+.st-card:active{cursor:grabbing}
+.st-count{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.st-title{font-size:clamp(1.15rem,4.5vw,1.45rem)}
+.st-desc{max-width:44ch;color:var(--muted);font-size:.95rem}
+.st-card.in-next{animation:stInNext .32s var(--ease)}
+.st-card.in-prev{animation:stInPrev .32s var(--ease)}
+@keyframes stInNext{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
+@keyframes stInPrev{from{opacity:0;transform:translateX(-18px)}to{opacity:1;transform:none}}
+.st-nav{display:flex;justify-content:center;gap:12px;margin-top:20px;flex-wrap:wrap}
+.st-nav .btn{min-width:150px}
+.btn-outline{background:rgba(255,255,255,.75);color:var(--encre);border-color:var(--sable)}
+.btn-outline:hover{background:#fff;border-color:var(--encre);box-shadow:none}
+.st-hint{text-align:center;margin-top:12px}
+@media (hover:hover) and (pointer:fine){.st-hint{display:none}}
+@media (max-width:380px){.st-nav .btn{min-width:0;flex:1;padding:12px 16px}}
+.rules{margin-top:16px;display:grid;gap:8px;font-size:.92rem}
+.rules p{padding:12px 16px;border-radius:var(--r-md)}
+
+.site-foot{border-top:1px solid rgba(220,213,201,.9);padding:22px 0 28px;font-size:.85rem;color:var(--muted)}
+.site-foot a{text-decoration:none}
+.site-foot a:hover{text-decoration:underline}
+
+/* Retour visuel quand un prix change */
+@keyframes bump{from{opacity:.3;transform:translateY(4px)}to{opacity:1;transform:none}}
+.bump{animation:bump .3s var(--ease)}
+
+/* Mode test */
+.tests{background:#fff;border:1px solid var(--encre);border-radius:var(--r-md);padding:16px;margin-top:20px;font-size:.85rem;overflow-x:auto}
+.tests table{border-collapse:collapse;width:100%}
+.tests td,.tests th{text-align:left;padding:4px 8px;border-top:1px solid var(--sable);vertical-align:top}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* Impression : une page claire */
+@media print{
+  @page{size:A4;margin:14mm}
+  body{background:#fff!important;padding:0;font-size:10.5pt}
+  .frame{display:block;background:#fff;box-shadow:none;border-radius:0;padding:0;overflow:visible}
+  .frame::before,.frame::after,.no-print,.minibar,.brief,.config,.how,.cta,.tests,.page-head .lede,.dashes,.legend,.hello{display:none!important}
+  .print-only{display:block}
+  .page-head{padding:8px 0}
+  h1{font-size:15pt}
+  .layout{display:block;padding:8px 0 0}
+  .recap{position:static;max-height:none;overflow:visible;background:#fff!important;color:var(--encre);box-shadow:none;padding:0;border-radius:0}
+  .r-ico{display:none}
+  .r-pill{border-color:var(--sable)}
+  .hero{margin-top:12px}
+  .hero .k,.hero .t-sub2,.lines li .d small,.r-sec h3,.rec-total .t-sub,.delivery,.r-legal{color:#444}
+  .hero .t-val{font-size:26pt;color:var(--encre)}
+  .r-sec{background:none;border:1px solid var(--sable);margin-top:12px}
+  .lines li{border-color:var(--sable);padding:5px 0;break-inside:avoid}
+  .subtotal{border-color:var(--encre)}
+  .compare{background:none;border-color:var(--sable)}
+  .site-foot{padding:10px 0 0}
+  .print-inclus{margin-top:12px;font-size:9pt;color:#444}
+}
+</style>
+</head>
+<body>
+
+<div class="frame">
+  <div class="content">
+    <header class="topbar">
+      <span class="mark" aria-hidden="true">TB</span>
+      <span class="who"><strong>MSA GROUP CONDOR</strong></span>
+      <!-- Salutation optionnelle : voir GREETING_NAME en haut du script -->
+      <span class="hello" id="hello" hidden><span class="txt" id="hello-txt"></span><span class="avatar" id="hello-av" aria-hidden="true"></span></span>
+    </header>
+
+    <div class="page-head">
+      <h1>Simulateur de commande, reels IA · MSA GROUP CONDOR</h1>
+      <p class="lede muted">Composez votre commande : le prix s’affiche immédiatement. Tarifs en dirhams (MAD), parcours ManyChat compris.</p>
+      <p class="print-only small" id="print-date"></p>
+    </div>
+
+    <main class="layout" id="main">
+      <div class="config stack" id="commande">
+
+        <section aria-labelledby="mode-h">
+          <h2 id="mode-h" class="sr-only">Type de commande</h2>
+          <fieldset class="tabs glass blur">
+            <legend class="sr-only">Type de commande</legend>
+            <input type="radio" name="mode" id="mode-carte" value="carte" checked>
+            <label for="mode-carte">Reels à l’unité</label>
+            <input type="radio" name="mode" id="mode-pack" value="pack">
+            <label for="mode-pack">Pack mensuel</label>
+          </fieldset>
+          <p class="small muted mode-hint" id="mode-hint">À l’unité : dès 2 reels, réglé à la commande. Pack mensuel : 6, 8 ou 10 reels, jusqu’à −12 %, réglé le 1er du mois.</p>
+        </section>
+
+        <!-- Mode à l'unité -->
+        <section id="panel-carte" aria-labelledby="carte-h">
+          <div class="section-title">
+            <h2 id="carte-h">Vos reels</h2>
+            <span class="badge" id="carte-count"></span>
+          </div>
+          <p class="small muted" style="margin-bottom:14px">2 reels minimum par commande, tous formats confondus. Le 720p est le standard recommandé pour Instagram. Durée maximale : 40 s.</p>
+          <div class="reels" id="reels"></div>
+          <button type="button" class="btn btn-glass static add-reel" id="add-reel" aria-describedby="add-hint">
+            <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            Ajouter un reel
+          </button>
+          <p class="small muted hint" id="add-hint">Le nouveau reel reprend les réglages du précédent.</p>
+          <p class="notice carte-min" id="carte-min" hidden></p>
+          <div class="suggest glass" id="suggest" hidden></div>
+        </section>
+
+        <!-- Mode pack -->
+        <section id="panel-pack" aria-labelledby="pack-h" hidden>
+          <div class="section-title"><h2 id="pack-h">Votre pack mensuel</h2></div>
+
+          <div class="card">
+            <fieldset>
+              <legend>Taille du pack</legend>
+              <div class="packs" id="packs"></div>
+            </fieldset>
+            <div class="perks" id="perks" style="margin-top:14px" hidden></div>
+          </div>
+
+          <div class="card" style="margin-top:14px">
+            <fieldset class="split">
+              <legend>Répartition entre les formats</legend>
+              <div class="presets" role="group" aria-label="Répartitions rapides">
+                <button type="button" class="chip" data-preset="ia">100 % IA</button>
+                <button type="button" class="chip" data-preset="broll">100 % B-roll</button>
+                <button type="button" class="chip" data-preset="half">Moitié-moitié</button>
+              </div>
+              <label for="split-range" class="sr-only">Nombre de reels 100 % IA dans le pack</label>
+              <div class="range-wrap" id="range-wrap">
+                <span class="range-bubble range-pos" id="range-bubble" aria-hidden="true"></span>
+                <input type="range" id="split-range" min="0" max="8" step="1" value="4">
+                <div class="ticks" id="ticks" aria-hidden="true"></div>
+              </div>
+              <div class="split-read" aria-hidden="true"><span id="split-ia"></span><span id="split-broll"></span></div>
+              <p class="small muted" id="split-prices"></p>
+            </fieldset>
+          </div>
+
+          <div class="section-title" style="margin-top:24px">
+            <h3 id="pack-reels-h">Les reels du pack</h3>
+            <span class="badge" id="pack-count"></span>
+          </div>
+          <p class="small muted" style="margin-bottom:14px">Prix de chaque reel : son prix à l’unité, options déduites, moins la remise du pack, arrondi aux 5 MAD inférieurs.</p>
+          <div class="reels" id="pack-reels"></div>
+          <button type="button" class="btn btn-glass static add-reel" id="add-pack-reel">
+            <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            Ajouter un reel au pack
+          </button>
+          <p class="notice carte-min" id="pack-min" role="status" hidden></p>
+
+          <div class="section-title" style="margin-top:28px">
+            <h3 id="extras-h">Reels voix off en plus</h3>
+            <span class="badge" id="extras-count" hidden></span>
+          </div>
+          <p class="small muted" style="margin-bottom:14px">Les reels voix off ne font pas partie des packs. Vous pouvez en ajouter, au prix à l’unité.</p>
+          <div class="reels" id="extras"></div>
+          <button type="button" class="btn btn-glass static add-reel" id="add-extra">
+            <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            Ajouter un reel voix off
+          </button>
+          <p class="small muted" style="margin-top:14px">Le pack se règle d’avance, le 1er du mois ; les reels non utilisés passent au mois suivant, pas au-delà.</p>
+        </section>
+
+        <details class="card inclus" id="inclus">
+          <summary>
+            <span><h2>Inclus dans chaque reel</h2><span class="teaser">Script, voix off, musique, sous-titres, carte de fin, légende, parcours ManyChat</span></span>
+            <span class="chev" aria-hidden="true"></span>
+          </summary>
+          <ul>
+            <li>Le script, calé sur la durée choisie</li>
+            <li>La voix off en français</li>
+            <li>La musique et les effets sonores</li>
+            <li>Les sous-titres</li>
+            <li>La carte de fin aux couleurs de MSA</li>
+            <li>La légende prête à publier</li>
+            <li class="mc">Un parcours ManyChat dédié : un commentaire avec le mot-clé déclenche un message automatique avec la fiche produit ou le catalogue, puis le contact est orienté vers le bon distributeur régional.</li>
+          </ul>
+          <p class="small muted" style="margin-top:14px"><strong>Reel 100 % IA</strong> : toutes les scènes, personnages et objets sont générés par IA. <strong>Reel B-roll</strong> : votre vidéo, filmée et montée par MSA, avec un avatar IA par-dessus. <strong>Reel voix off</strong> : votre vidéo montée, avec une voix off IA (elle garde sa résolution).</p>
+        </details>
+
+        <section class="card" id="services" aria-labelledby="rec-h">
+          <h2 id="rec-h">Services mensuels</h2>
+          <div class="check" style="cursor:default;margin-top:6px">
+            <span class="ph" aria-hidden="true"></span>
+            <span class="lbl">Maintenance mensuelle<br><span class="small muted">Toujours incluse. Agent du site (Voiceflow), automatisations Make.com, parcours Instagram ManyChat : surveillance, corrections et petits ajustements.</span></span>
+            <span class="amt" id="maint-amt"></span>
+          </div>
+          <div class="check sep" style="cursor:default">
+            <span class="ph" aria-hidden="true"></span>
+            <span class="lbl">Abonnement Voiceflow<br><span class="small muted">Refacturé au prix coûtant, le 13 de chaque mois.</span></span>
+            <span class="amt" id="vf-amt"></span>
+          </div>
+        </section>
+      </div>
+
+      <aside class="recap" id="recap" aria-labelledby="recap-h">
+        <div class="r-top">
+          <span class="r-ico" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.5v5l4.5-2.5z"/></svg></span>
+          <h2 id="recap-h">Récapitulatif</h2>
+          <span class="r-pill" id="recap-mode"></span>
+        </div>
+
+        <div class="hero">
+          <div class="k">Total du mois</div>
+          <div class="t-val" id="t-main" aria-live="polite"></div>
+          <p class="t-sub" id="t-main-sub"></p>
+          <p class="t-sub2" id="recap-delivery"></p>
+          <div class="dashes" id="dashes" aria-hidden="true"></div>
+          <div class="legend" aria-hidden="true"><span>100 % IA</span><span class="b">B-roll</span><span class="v" id="legend-vo" hidden>Voix off</span></div>
+        </div>
+
+        <div id="recap-blocked" class="notice" role="status" hidden></div>
+
+        <div id="recap-body">
+          <div class="r-sec">
+            <h3>Reels</h3>
+            <ul class="lines" id="recap-lines"></ul>
+            <div class="subtotal"><span>Sous-total reels</span><span id="recap-subtotal"></span></div>
+          </div>
+          <p class="compare" id="recap-compare" hidden></p>
+
+          <div class="r-sec">
+            <h3>Total du mois</h3>
+            <ul class="lines" id="recap-rec"></ul>
+            <div class="subtotal"><span>Total du mois</span><span id="t-month"></span></div>
+          </div>
+
+          <div class="r-sec">
+            <h3>Refacturé à part</h3>
+            <ul class="lines" id="recap-vf"></ul>
+          </div>
+
+          <div class="rec-total">
+            <div><div class="t-label">Total, Voiceflow compris</div><div class="t-sub">Total du mois + abonnement Voiceflow</div></div>
+            <div class="t-val" id="t-rec"></div>
+          </div>
+          <p class="r-legal" id="legal-maint"></p>
+          <p class="r-legal" id="legal-tva"></p>
+
+          <div class="brief">
+            <a class="btn btn-ghost-dark" id="brief" href="https://tally.so/r/4a4WEd?client=MSA" target="_blank" rel="noopener">
+              <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>
+              Remplir les briefs
+            </a>
+            <p class="note">Une fiche par reel. Rouvrez le même lien pour chaque reel et choisissez son numéro.</p>
+          </div>
+        </div>
+
+        <div class="cta">
+          <a class="btn btn-glass" id="wa" href="#" target="_blank" rel="noopener">
+            <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.2A8.5 8.5 0 1 1 21 12z"/></svg>
+            Envoyer ma demande sur WhatsApp
+          </a>
+          <button type="button" class="btn btn-ghost-dark" id="print">
+            <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><rect x="7" y="14" width="10" height="7" rx="1"/></svg>
+            Imprimer / PDF
+          </button>
+          <p class="note">Aucune donnée n’est enregistrée. Le message WhatsApp s’ouvre prérempli, vous l’envoyez vous-même.</p>
+        </div>
+
+        <p class="print-only print-inclus">Chaque reel comprend : script, voix off en français, musique, sous-titres, carte de fin MSA, légende prête à publier et parcours ManyChat dédié. Révision d’exécution comprise, une par reel. Changement après validation : 50 % du prix du reel.</p>
+      </aside>
+    </main>
+
+    <section class="how" id="etapes" aria-labelledby="how-h">
+      <div class="how-head">
+        <span class="badge soft">Processus en 6 étapes</span>
+        <h2 id="how-h">Comment ça se passe</h2>
+      </div>
+
+      <!-- Parcours étape par étape (construit à partir de la liste ci-dessous) -->
+      <div class="stepper-ui" id="stepper" hidden>
+        <div class="st-track">
+          <div class="st-dots" id="st-dots" role="group" aria-label="Étapes du processus"></div>
+          <div class="st-progress" aria-hidden="true"><i id="st-fill"></i></div>
+        </div>
+        <div class="st-card glass" id="st-card">
+          <p class="st-count" id="st-count"></p>
+          <h3 class="st-title" id="st-title"></h3>
+          <p class="st-desc" id="st-desc"></p>
+        </div>
+        <div class="st-nav">
+          <button type="button" class="btn btn-outline" id="st-prev">
+            <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>
+            Précédent
+          </button>
+          <button type="button" class="btn" id="st-next"></button>
+        </div>
+        <p class="small muted st-hint">Glissez la carte vers la gauche ou la droite pour changer d’étape.</p>
+      </div>
+
+      <ol class="steps" id="steps-src">
+        <li class="glass"><strong>Commande</strong><p class="full">2 reels minimum, dans la combinaison de votre choix.</p><p class="short">2 reels minimum, au choix.</p></li>
+        <li class="glass"><strong>Facture et préparation</strong><p class="full">Vous recevez la facture et la liste de ce qu’il faut préparer : produits, fiches techniques, vidéos montées pour les B-roll, script si vous l’écrivez.</p><p class="short">Facture et liste à préparer.</p></li>
+        <li class="glass"><strong>Paiement, puis réunion</strong><p class="full">Dès réception du paiement, on fixe une réunion de lancement d’1 h pour décider du concept, du message et de la durée de chaque reel.</p><p class="short">Réunion de lancement d’1 h.</p></li>
+        <li class="glass"><strong>Compte rendu</strong><p class="full">Vous recevez un résumé écrit des décisions. Votre confirmation écrite vaut validation.</p><p class="short">Votre confirmation vaut validation.</p></li>
+        <li class="glass"><strong>Livraison</strong><p class="full">Dans le délai indiqué dans votre récapitulatif, après validation du compte rendu. Une révision d’exécution comprise par reel.</p><p class="short">Une révision comprise par reel.</p></li>
+        <li class="glass"><strong>Publication</strong><p class="full">Vous publiez les reels quand vous le souhaitez.</p><p class="short">Quand vous le souhaitez.</p></li>
+      </ol>
+      <div class="rules">
+        <p class="glass">Un changement après validation du compte rendu (nouveau concept, dialogue, scène ou personnage) est facturé 50 % du prix du reel.</p>
+        <p class="glass">Prix bloqués 3 mois si vous signez avant le 1er novembre 2026.</p>
+      </div>
+      <div id="tests-out"></div>
+    </section>
+
+    <footer class="site-foot">
+      Taha BOUKHABZA · Consultant en automatisation IA · @tahabekey · <a href="mailto:taha.bkz@gmail.com">taha.bkz@gmail.com</a> · <a href="tel:+212608496290">+212 608 496 290</a>
+    </footer>
+  </div>
+</div>
+
+<div class="toast no-print" id="toast" hidden><span id="toast-msg"></span><button type="button" id="toast-undo">Annuler</button></div>
+<div class="sr-only" aria-live="polite" id="live"></div>
+
+<div class="minibar no-print" id="minibar" aria-hidden="true">
+  <div><div class="mb-l" id="mb-l">Total de la commande</div><div class="mb-v" id="mb-v"></div></div>
+  <a href="#recap" tabindex="-1">Récapitulatif</a>
+</div>
+
+<script>
+// Salutation en haut de page : laisser vide pour la masquer, ou mettre un prénom (ex. 'Sabrina').
+const GREETING_NAME = '';
+
+/* =====================================================================
+   CONFIGURATION — tous les prix sont ici (MAD). Modifier un chiffre ici
+   suffit : l'interface, le récapitulatif et le message WhatsApp suivent.
+   Source : proposition TB-MSA-2026-11.
+   ===================================================================== */
+const CONFIG = {
+  minReels: 2,                       // à l'unité, tous formats confondus
+  // Prix à l'unité, 100 % IA et B-roll : CONFIG.unit[format][durée][résolution]
+  unit: {
+    ia:    { s15: { 720: 750, 1080: 850 }, s25: { 720: 950, 1080: 1100 }, s40: { 720: 1300, 1080: 1550 } },
+    broll: { s15: { 720: 350, 1080: 450 }, s25: { 720: 500, 1080: 600 },  s40: { 720: 750,  1080: 850 } }
+  },
+  // Reel voix off (votre vidéo montée + voix off IA) : CONFIG.voix[durée][qui écrit le script].
+  // Pas de choix de résolution : la vidéo garde la vôtre. Pas d'options.
+  voix: { s15: { mine: 250, yours: 150 }, s25: { mine: 300, yours: 200 }, s40: { mine: 450, yours: 300 } },
+  // Options (100 % IA et B-roll uniquement)
+  options: {
+    script:  { amount: 100, formats: ['ia', 'broll'] },
+    visuels: { amount: 150, formats: ['ia'] }
+  },
+  // Packs : prix d'un reel = (prix à l'unité − options) × (1 − remise), arrondi aux 5 MAD inférieurs.
+  // Les reels voix off n'entrent jamais dans un pack.
+  packFormats: ['ia', 'broll'],
+  packRounding: 5,
+  packs: [
+    { size: 6,  discount: 5,  deliveryDays: 5,
+      perks: ['Livraison : 2 reels tous les 5 jours ouvrés', 'Une réunion de lancement'] },
+    { size: 8,  discount: 10, deliveryDays: 3, recommended: true,
+      perks: ['Livraison : 2 reels tous les 3 jours ouvrés', '1 révision en plus (9 au total)', 'Rapport mensuel des demandes générées par chaque reel', 'Une réunion de lancement'] },
+    { size: 10, discount: 12, deliveryDays: 3,
+      perks: ['Livraison : 2 reels tous les 3 jours ouvrés', 'Rapport mensuel des demandes générées par chaque reel', 'Un point de 30 min en milieu de mois (planning et priorités, sans nouveau concept)', 'Une réunion de lancement'] }
+  ],
+  deliveryDays: 5,                   // à l'unité : 2 reels tous les 5 jours ouvrés
+  recurring: { maintenance: 2000, voiceflow: 606 },
+  whatsapp: '212608496290',
+  brief: { url: 'https://tally.so/r/4a4WEd', defaultClient: 'MSA' }
+};
+
+const LEGAL = {
+  tva: 'Factures hors champ de la TVA (article 89-II-1°-c du CGI).',
+  maintenance: 'La maintenance est facturée le 1er de chaque mois.'
+};
+
+const LABELS = {
+  format: { ia: 'Reel 100 % IA', broll: 'Reel B-roll', vo: 'Reel voix off' },
+  formatShort: { ia: '100 % IA', broll: 'B-roll', vo: 'Voix off' },
+  duration: { s15: 'Jusqu’à 15 s', s25: '16 à 25 s', s40: '26 à 40 s' }
+};
+
+/* ============================ Fonctions pures ============================ */
+
+const NNBSP = ' '; // espace fine insécable (séparateur de milliers)
+const NBSP = ' ';
+
+function formatNumber(n) {
+  const s = String(Math.round(Math.abs(n))).replace(/\B(?=(\d{3})+(?!\d))/g, NNBSP);
+  return (n < 0 ? '−' : '') + s;
+}
+function formatMAD(n) { return formatNumber(n) + NBSP + 'MAD'; }
+function formatSigned(n) { return (n > 0 ? '+' : '') + formatMAD(n); }
+
+function optionApplies(opt, format) { return CONFIG.options[opt].formats.includes(format); }
+function isPackFormat(format) { return CONFIG.packFormats.includes(format); }
+function hasResolution(format) { return format !== 'vo'; }
+
+/** Prix à l'unité, avant options. reel = { format, duration, resolution, script, visuels } */
+function unitBase(reel) {
+  if (reel.format === 'vo') return CONFIG.voix[reel.duration][reel.script ? 'yours' : 'mine'];
+  return CONFIG.unit[reel.format][reel.duration][reel.resolution];
+}
+/** Réductions des options (100 % IA et B-roll uniquement) */
+function optionsAmount(reel) {
+  let a = 0;
+  if (reel.script && optionApplies('script', reel.format)) a += CONFIG.options.script.amount;
+  if (reel.visuels && optionApplies('visuels', reel.format)) a += CONFIG.options.visuels.amount;
+  return a;
+}
+/** Prix d'un reel à l'unité */
+function reelPrice(reel) { return unitBase(reel) - optionsAmount(reel); }
+
+function getPack(size) { return CONFIG.packs.find(p => p.size === size); }
+
+/** Prix d'un reel dans un pack : options déduites AVANT la remise, arrondi aux 5 MAD inférieurs.
+    Calcul en entiers : (prix × (100 − remise)) / (100 × 5), arrondi vers le bas, × 5. */
+function packReelPrice(reel, size) {
+  const pack = getPack(size), step = CONFIG.packRounding;
+  return Math.floor(reelPrice(reel) * (100 - pack.discount) / (100 * step)) * step;
+}
+
+function describeReel(reel) {
+  const parts = [LABELS.formatShort[reel.format], LABELS.duration[reel.duration]];
+  if (hasResolution(reel.format)) parts.push(reel.resolution + 'p');
+  if (reel.script) parts.push('votre script');
+  if (reel.visuels && optionApplies('visuels', reel.format)) parts.push('vos visuels');
+  return parts.join(', ');
+}
+
+/** Devis à l'unité (tous formats) */
+function quoteCarte(reels) {
+  const lines = reels.map((r, i) => ({ label: 'Reel ' + (i + 1), detail: describeReel(r), amount: reelPrice(r) }));
+  const subtotal = lines.reduce((s, l) => s + l.amount, 0);
+  return {
+    mode: 'carte', lines, subtotal, count: reels.length,
+    formats: reels.map(r => r.format),
+    valid: reels.length >= CONFIG.minReels,
+    problem: reels.length >= CONFIG.minReels ? null : 'min',
+    deliveryDays: CONFIG.deliveryDays
+  };
+}
+
+/** Devis pack : p = { size, reels (100 % IA / B-roll), extras (voix off à l'unité) } */
+function quotePack(p) {
+  const pack = getPack(p.size) || getPack(8);
+  const reels = p.reels || [], extras = p.extras || [];
+  // Lignes du pack, regroupées quand plusieurs reels sont identiques
+  const groups = [];
+  reels.forEach(r => {
+    const price = isPackFormat(r.format) ? packReelPrice(r, pack.size) : reelPrice(r);
+    const key = describeReel(r) + '|' + price;
+    const g = groups.find(x => x.key === key);
+    if (g) g.n++; else groups.push({ key, n: 1, detail: describeReel(r), price });
+  });
+  const packLines = groups.map(g => ({ label: g.n + ' × ' + g.detail, detail: formatMAD(g.price) + ' le reel', amount: g.n * g.price }));
+  const extraLines = extras.map((r, i) => ({ label: 'Voix off en plus ' + (i + 1), detail: describeReel(r) + ', à l’unité', amount: reelPrice(r) }));
+  const packTotal = packLines.reduce((s, l) => s + l.amount, 0);
+  const extrasTotal = extraLines.reduce((s, l) => s + l.amount, 0);
+  const carteTotal = reels.reduce((s, r) => s + reelPrice(r), 0);
+  const badFormat = !reels.every(r => isPackFormat(r.format)) || !extras.every(r => r.format === 'vo');
+  const problem = badFormat ? 'format' : (reels.length !== pack.size ? 'count' : null);
+  return {
+    mode: 'pack', pack, lines: packLines.concat(extraLines), packLines, extraLines,
+    packTotal, extrasTotal, subtotal: packTotal + extrasTotal,
+    carteTotal, saving: carteTotal - packTotal,
+    count: reels.length + extras.length, packCount: reels.length,
+    formats: reels.map(r => r.format).concat(extras.map(r => r.format)),
+    valid: !problem, problem,
+    deliveryDays: pack.deliveryDays || CONFIG.deliveryDays
+  };
+}
+
+/** Total du mois = reels + maintenance (toujours). Voiceflow à part, puis total qui l'inclut. */
+function quoteMonth(reelsSubtotal) {
+  const maintenance = CONFIG.recurring.maintenance, voiceflow = CONFIG.recurring.voiceflow;
+  const total = reelsSubtotal + maintenance;
+  return { reels: reelsSubtotal, maintenance, total, voiceflow, grandTotal: total + voiceflow };
+}
+
+function deliveryText(days) { return 'Livraison : 2 reels tous les ' + days + ' jours ouvrés.'; }
+
+/** Devis complet à partir de l'état de l'interface */
+function quoteAll(state) {
+  const reels = state.mode === 'pack' ? quotePack(state.pack) : quoteCarte(state.reels);
+  return { reels, month: quoteMonth(reels.subtotal) };
+}
+
+/** Traduit une commande à l'unité en pack : 100 % IA et B-roll dans le pack, voix off en plus */
+function carteToPack(reels) {
+  const inPack = reels.filter(r => isPackFormat(r.format));
+  return { size: inPack.length, reels: inPack.map(r => Object.assign({}, r)), extras: reels.filter(r => r.format === 'vo').map(r => Object.assign({}, r)) };
+}
+
+/** Propose un pack quand il coûte moins cher que la commande à l'unité */
+function packSuggestion(reels) {
+  const n = reels.filter(r => isPackFormat(r.format)).length;
+  const exact = getPack(n);
+  if (exact) {
+    const cfg = carteToPack(reels);
+    const packTotal = quotePack(cfg).subtotal;
+    const carteTotal = quoteCarte(reels).subtotal;
+    const saving = carteTotal - packTotal;
+    return saving > 0 ? { type: 'exact', pack: exact, cfg, packTotal, carteTotal, saving } : null;
+  }
+  const next = getPack(n + 1);
+  return next && reels.length >= CONFIG.minReels ? { type: 'near', pack: next } : null;
+}
+
+/** Lien vers les briefs (Tally). Reprend client et commande de l'adresse du simulateur. */
+function briefUrl(search) {
+  const q = new URLSearchParams(search || '');
+  const client = (q.get('client') || '').trim() || CONFIG.brief.defaultClient;
+  const commande = (q.get('commande') || '').trim();
+  return CONFIG.brief.url + '?client=' + encodeURIComponent(client) + (commande ? '&commande=' + encodeURIComponent(commande) : '');
+}
+
+/** Configuration <-> adresse (#...) : la simulation survit à un rechargement
+    et peut être partagée. Rien n'est envoyé ni enregistré ailleurs. */
+const FORMAT_CODE = { ia: 'i', broll: 'b', vo: 'v' };
+function encodeReels(list) {
+  return list.map(x => FORMAT_CODE[x.format] + x.duration.slice(1) + (x.resolution === 1080 ? 'h' : 's') + (x.script ? 1 : 0) + (x.visuels ? 1 : 0)).join('-');
+}
+function decodeReels(str) {
+  return (str || '').split('-').filter(Boolean).map(code => {
+    const m = /^([ibv])(15|25|40)([sh])([01])([01])$/.exec(code);
+    if (!m) throw new Error('reel');
+    const format = { i: 'ia', b: 'broll', v: 'vo' }[m[1]];
+    return { format, duration: 's' + m[2], resolution: m[3] === 'h' && hasResolution(format) ? 1080 : 720, script: m[4] === '1', visuels: m[5] === '1' && optionApplies('visuels', format) };
+  });
+}
+function encodeState(s) {
+  return 'm=' + (s.mode === 'pack' ? 'p' : 'c') + '&r=' + encodeReels(s.reels) +
+    '&ps=' + s.pack.size + '&pr=' + encodeReels(s.pack.reels) + '&x=' + encodeReels(s.pack.extras);
+}
+function decodeState(str) {
+  try {
+    const q = new URLSearchParams(String(str).replace(/^#/, ''));
+    if (!q.has('m')) return null;
+    const size = +q.get('ps');
+    const pack = getPack(size) ? { size, reels: decodeReels(q.get('pr')), extras: decodeReels(q.get('x')) } : null;
+    return { mode: q.get('m') === 'p' ? 'pack' : 'carte', reels: decodeReels(q.get('r')), pack };
+  } catch (e) { return null; }
+}
+
+/** Message WhatsApp prérempli */
+function buildWhatsAppText(state) {
+  const q = quoteAll(state), r = q.reels, m = q.month, out = [];
+  out.push('Bonjour Taha,', '', 'Voici ma demande de reels IA pour MSA GROUP CONDOR :', '');
+  if (r.mode === 'carte') {
+    out.push('Formule : reels à l’unité (' + r.count + ' reels)');
+    r.lines.forEach(l => out.push('- ' + l.label + ' : ' + l.detail + ' = ' + formatMAD(l.amount)));
+  } else {
+    out.push('Formule : pack ' + r.pack.size + ' reels (−' + r.pack.discount + ' %)');
+    r.packLines.forEach(l => out.push('- ' + l.label + ' (' + l.detail + ') = ' + formatMAD(l.amount)));
+    if (r.extraLines.length) {
+      out.push('En plus, à l’unité :');
+      r.extraLines.forEach(l => out.push('- ' + l.detail + ' = ' + formatMAD(l.amount)));
+    }
+  }
+  out.push('');
+  out.push('Sous-total reels : ' + formatMAD(m.reels));
+  if (r.mode === 'pack' && r.saving > 0) out.push('(à l’unité : ' + formatMAD(r.carteTotal) + ' pour les reels du pack, économie ' + formatMAD(r.saving) + ')');
+  out.push('Maintenance : ' + formatMAD(m.maintenance));
+  out.push('Total du mois : ' + formatMAD(m.total));
+  out.push('Abonnement Voiceflow (refacturé au prix coûtant) : ' + formatMAD(m.voiceflow));
+  out.push('Total, Voiceflow compris : ' + formatMAD(m.grandTotal));
+  out.push(LEGAL.maintenance);
+  out.push(LEGAL.tva);
+  out.push('');
+  out.push(deliveryText(r.deliveryDays));
+  if (r.mode === 'pack' && r.pack.perks) out.push('Pack ' + r.pack.size + ' : ' + r.pack.perks.join(' ; ') + '.');
+  out.push('', 'Merci de me confirmer la suite.');
+  // Le message est écrit du point de vue de MSA
+  return out.join('\n').replace(/votre script/g, 'script fourni par MSA').replace(/vos visuels/g, 'visuels fournis par MSA');
+}
+/** Texte sûr pour WhatsApp : les espaces fines insécables, le signe moins typographique,
+    le « × » et l'apostrophe courbe empêchent parfois l'application d'ouvrir la conversation
+    avec le texte prérempli. On les remplace par leurs équivalents simples. */
+function whatsAppSafe(text) {
+  return text
+    .replace(/[   ]/g, ' ')
+    .replace(/−/g, '-')
+    .replace(/×/g, 'x')
+    .replace(/[‘’]/g, "'");
+}
+function whatsAppText(state) { return whatsAppSafe(buildWhatsAppText(state)); }
+function whatsAppUrl(state) {
+  return 'https://wa.me/' + CONFIG.whatsapp + '?text=' + encodeURIComponent(whatsAppText(state));
+}
+/** Solution de repli sur ordinateur : WhatsApp Web, dans le navigateur */
+function whatsAppWebUrl(state) {
+  return 'https://web.whatsapp.com/send?phone=' + CONFIG.whatsapp + '&text=' + encodeURIComponent(whatsAppText(state));
+}
+
+/* ================================ Tests ================================= */
+function runTests() {
+  // Par défaut : 16 à 25 s, 720p, « mon script », sans visuels
+  const R = (format, duration, resolution, script, visuels) => ({ format, duration: duration || 's25', resolution: resolution || 720, script: !!script, visuels: !!visuels });
+  const I = R('ia'), B = R('broll'), V = R('vo');
+  const rep = (x, n) => Array.from({ length: n }, () => Object.assign({}, x));
+  const P = (size, reels, extras) => ({ size, reels, extras: extras || [] });
+  const month = q => quoteMonth(q.subtotal);
+
+  const c1 = quoteCarte([I, I, B, B, V, V]), c2 = quoteCarte(rep(I, 4)), c3 = quoteCarte(rep(B, 4));
+  const p4 = quotePack(P(8, rep(I, 4).concat(rep(B, 4)))), p5 = quotePack(P(10, rep(I, 5).concat(rep(B, 5))));
+  const p6 = quotePack(P(8, rep(I, 5).concat(rep(B, 3))));
+  const SAMPLE = { mode: 'pack', reels: [R('ia', 's40', 1080, 1, 1), R('vo', 's15', 720, 1)], pack: P(8, rep(I, 4).concat(rep(B, 4)), [V]) };
+  const all = [c1, c2, c3, p4, p5, p6, quotePack(SAMPLE.pack)];
+
+  const cases = [
+    // 1 à 14 : cas de la proposition
+    ['1. À l’unité 2 IA + 2 B-roll + 2 voix off : reels',  c1.subtotal, 3500],
+    ['1. … total du mois',                                 month(c1).total, 5500],
+    ['2. À l’unité 4 IA : reels',                          c2.subtotal, 3800],
+    ['2. … total du mois',                                 month(c2).total, 5800],
+    ['3. À l’unité 4 B-roll : reels',                      c3.subtotal, 2000],
+    ['3. … total du mois',                                 month(c3).total, 4000],
+    ['4. Pack 8 : 4 IA + 4 B-roll : reels',                p4.subtotal, 5220],
+    ['4. … total du mois',                                 month(p4).total, 7220],
+    ['5. Pack 10 : 5 IA + 5 B-roll : reels',               p5.subtotal, 6375],
+    ['5. … total du mois',                                 month(p5).total, 8375],
+    ['6. Pack 8 : 5 IA + 3 B-roll : reels',                p6.subtotal, 5625],
+    ['7. IA à l’unité, votre script + vos visuels',        reelPrice(R('ia', 's25', 720, 1, 1)), 700],
+    ['8. IA en pack 8, votre script',                      packReelPrice(R('ia', 's25', 720, 1), 8), 765],
+    ['9. IA en pack 8, 26 à 40 s, 1080p',                  packReelPrice(R('ia', 's40', 1080), 8), 1395],
+    ['10. Pack 6, IA de base',                             packReelPrice(I, 6), 900],
+    ['10. Pack 10, IA de base (arrondi)',                  packReelPrice(I, 10), 835],
+    ['11. À l’unité avec 1 reel : bloqué',                 quoteCarte([I]).valid, false],
+    ['12. Pack 8 avec 7 reels : bloqué',                   quotePack(P(8, rep(I, 7))).valid, false],
+    ['12. … débloqué à 8 reels',                           quotePack(P(8, rep(I, 8))).valid, true],
+    ['13. Voix off dans le pack : refusé',                 quotePack(P(8, rep(I, 7).concat([V]))).valid, false],
+    ['13. Voix off hors pack (format)',                    isPackFormat('vo'), false],
+    ['13. Voix off en ligne en plus : accepté',            quotePack(P(8, rep(I, 8), [V])).valid, true],
+    ['13. … ajouté au prix à l’unité',                     quotePack(P(8, rep(I, 8), [V])).subtotal, 6840 + 300],
+    ['14. Chaque total ajoute 2 000 de maintenance',       all.every(q => month(q).total - q.subtotal === 2000), true],
+    ['14. Voiceflow 606 à part, total qui l’inclut',       all.every(q => month(q).voiceflow === 606 && month(q).grandTotal === month(q).total + 606), true],
+    // Grille de base du document (16 à 25 s, 720p, sans options)
+    ['Grille : pack 6 B-roll',  packReelPrice(B, 6), 475],
+    ['Grille : pack 8 IA',      packReelPrice(I, 8), 855],
+    ['Grille : pack 8 B-roll',  packReelPrice(B, 8), 450],
+    ['Grille : pack 10 B-roll', packReelPrice(B, 10), 440],
+    // Voix off
+    ['Voix off ≤15 s : mon script / votre script',  reelPrice(R('vo', 's15')) + ' / ' + reelPrice(R('vo', 's15', 720, 1)), '250 / 150'],
+    ['Voix off 26 à 40 s : votre script',           reelPrice(R('vo', 's40', 720, 1)), 300],
+    ['Voix off : visuels et 1080p sans effet',      reelPrice(R('vo', 's25', 1080, 0, 1)), 300],
+    ['B-roll : visuels sans effet',                 reelPrice(R('broll', 's25', 720, 0, 1)), 500],
+    // Divers
+    ['Format MAD',                                   formatMAD(5220), '5 220 MAD'],
+    ['Livraison : à l’unité / pack 6 / 8 / 10',      [c1.deliveryDays, quotePack(P(6, rep(I, 6))).deliveryDays, p4.deliveryDays, p5.deliveryDays].join(' / '), '5 / 5 / 3 / 3'],
+    ['Suggestion : 8 IA à l’unité → économie pack 8', (packSuggestion(rep(I, 8)) || {}).saving, 760],
+    ['Suggestion : voix off restent en plus',        (packSuggestion(rep(I, 8).concat([V])) || {}).cfg.extras.length, 1],
+    ['Suggestion : 7 reels → pack 8 à 1 reel près',  (packSuggestion(rep(I, 7)) || {}).type, 'near'],
+    ['Adresse : aller-retour',                       encodeState(Object.assign({}, SAMPLE, decodeState('#' + encodeState(SAMPLE)))), encodeState(SAMPLE)],
+    ['Adresse invalide ignorée',                     decodeState('#m=c&r=zz'), null],
+    ['Briefs : client par défaut',                   briefUrl(''), 'https://tally.so/r/4a4WEd?client=MSA'],
+    ['Briefs : client et commande transmis',         briefUrl('?client=MSA%20Group&commande=C-12/3'), 'https://tally.so/r/4a4WEd?client=MSA%20Group&commande=C-12%2F3'],
+    ['WhatsApp : aucun caractère à risque',          /[   −×‘’]/.test(whatsAppText(SAMPLE)), false],
+    ['WhatsApp : numéro et texte dans le lien',      whatsAppUrl(SAMPLE).startsWith('https://wa.me/212608496290?text=Bonjour'), true],
+    ['WhatsApp : total du mois lisible',             whatsAppText(Object.assign({}, SAMPLE, { pack: P(8, rep(I, 4).concat(rep(B, 4))) })).includes('Total du mois : 7 220 MAD'), true]
+  ];
+  const results = cases.map(([name, got, want]) => ({ name, got, want, ok: got === want }));
+  return { results, passed: results.filter(r => r.ok).length, total: results.length };
+}
+
+/* ============================== Interface =============================== */
+if (typeof document !== 'undefined') (function () {
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const plural = n => n + (n > 1 ? ' reels' : ' reel');
+
+  let uid = 0;
+  const newReel = (base, open, format) => ({
+    id: ++uid,
+    format: format || (base ? base.format : 'ia'),
+    duration: base ? base.duration : 's25', resolution: base ? base.resolution : 720,
+    script: base ? base.script : false, visuels: base ? base.visuels : false,
+    open: !!open
+  });
+  const makePack = (size, iaCount) => ({
+    size, extras: [],
+    reels: Array.from({ length: size }, (_, i) => newReel(null, false, i < iaCount ? 'ia' : 'broll'))
+  });
+  const state = {
+    mode: 'carte',
+    reels: [newReel(null, true), newReel(null, false)],
+    pack: makePack(8, 4)
+  };
+
+  // Reprise d'une configuration présente dans l'adresse
+  const saved = decodeState(location.hash);
+  if (saved) {
+    state.mode = saved.mode;
+    if (saved.reels.length) state.reels = saved.reels.map((r, i) => newReel(r, i === 0));
+    if (saved.pack) state.pack = { size: saved.pack.size, reels: saved.pack.reels.map(r => newReel(r)), extras: saved.pack.extras.map(r => newReel(r)) };
+  }
+
+  const live = msg => { $('#live').textContent = ''; setTimeout(() => { $('#live').textContent = msg; }, 30); };
+  function bump(el, text, html) {
+    if (el.dataset.v === text) return;
+    el.dataset.v = text;
+    if (html) el.innerHTML = html; else el.textContent = text;
+    el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump');
+  }
+  const ARROW = '<svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M7 17L17 7M8 7h9v9"/></svg>';
+
+  /* ---------- Listes de reels : à l'unité, pack, voix off en plus ---------- */
+  const LISTS = {
+    carte: { el: '#reels',      add: '#add-reel',      title: 'Reel',     formats: ['ia', 'broll', 'vo'],
+             get: () => state.reels,       set: v => { state.reels = v; },       price: r => reelPrice(r) },
+    pack:  { el: '#pack-reels', add: '#add-pack-reel', title: 'Reel',     formats: CONFIG.packFormats,
+             get: () => state.pack.reels,  set: v => { state.pack.reels = v; },  price: r => packReelPrice(r, state.pack.size) },
+    extra: { el: '#extras',     add: '#add-extra',     title: 'Voix off', formats: ['vo'],
+             get: () => state.pack.extras, set: v => { state.pack.extras = v; }, price: r => reelPrice(r) }
+  };
+
+  function seg(name, legend, options, current) {
+    return '<fieldset><legend>' + legend + '</legend><div class="seg">' + options.map(([v, l, sub]) => {
+      const id = name + '-' + v;
+      return '<input type="radio" name="' + name + '" id="' + id + '" value="' + v + '"' + (String(current) === String(v) ? ' checked' : '') + '>' +
+        '<label for="' + id + '">' + (sub ? '<span>' + l + '<small>' + sub + '</small></span>' : l) + '</label>';
+    }).join('') + '</div></fieldset>';
+  }
+
+  const SCRIPT_HELP = {
+    ia: 'MSA écrit le script, définitif et calé sur la durée.',
+    broll: 'MSA écrit le script, définitif et calé sur la durée.',
+    vo: 'MSA écrit le texte de la voix off. Prix selon la grille voix off.'
+  };
+
+  function reelCard(kind) {
+    const L = LISTS[kind];
+    return (r, i) => {
+      const n = i + 1, k = 'r' + r.id, label = L.title + ' ' + n;
+      const price = L.price(r);
+      // Écart de prix réel de l'option « votre script » (remise du pack comprise)
+      const scriptDelta = L.price(Object.assign({}, r, { script: true })) - L.price(Object.assign({}, r, { script: false }));
+      const visDelta = L.price(Object.assign({}, r, { visuels: true })) - L.price(Object.assign({}, r, { visuels: false }));
+      const full = kind === 'pack' && state.pack.reels.length >= state.pack.size;
+      return '<details class="card reel" data-id="' + r.id + '"' + (r.open ? ' open' : '') + '>' +
+        '<summary><span class="num" aria-hidden="true">' + (kind === 'extra' ? 'V' + n : String(n).padStart(2, '0')) + '</span><span class="s-main"><h3 id="' + k + '-h">' + label + '</h3><span class="s-desc">' + esc(describeReel(r)) + '</span></span>' +
+        '<span class="reel-price" data-price>' + formatMAD(price) + '</span><span class="chev" aria-hidden="true"></span></summary>' +
+        '<div class="body">' +
+        (L.formats.length > 1 ? seg(k + '-format', 'Format', L.formats.map(f => [f, LABELS.formatShort[f]]), r.format) : '') +
+        seg(k + '-duration', 'Durée', [['s15', 'Jusqu’à 15 s'], ['s25', '16 à 25 s'], ['s40', '26 à 40 s']], r.duration) +
+        (hasResolution(r.format) ? seg(k + '-resolution', 'Résolution', [['720', '720p', 'recommandé'], ['1080', '1080p']], r.resolution) : '') +
+        '<fieldset><legend>Options</legend>' +
+        '<label class="check"><input type="checkbox" id="' + k + '-opt-script" data-opt="script"' + (r.script ? ' checked' : '') + '>' +
+        '<span class="lbl">Votre script<br><span class="small muted">' + SCRIPT_HELP[r.format] + '</span></span>' +
+        '<span class="amt">' + formatSigned(scriptDelta) + '</span></label>' +
+        (optionApplies('visuels', r.format)
+          ? '<label class="check"><input type="checkbox" id="' + k + '-opt-visuels" data-opt="visuels"' + (r.visuels ? ' checked' : '') + '>' +
+            '<span class="lbl">Vos visuels<br><span class="small muted">MSA fournit les images (9:16, haute résolution).</span></span>' +
+            '<span class="amt">' + formatSigned(visDelta) + '</span></label>'
+          : '') +
+        '</fieldset>' +
+        '<div class="actions">' +
+        (full ? '' : '<button type="button" class="btn-link" data-dup aria-label="Dupliquer ' + label + '">Dupliquer</button>') +
+        '<button type="button" class="btn-link" data-remove aria-label="Retirer ' + label + '">Retirer</button>' +
+        '</div></div></details>';
+    };
+  }
+
+  function renderList(kind) { $(LISTS[kind].el).innerHTML = LISTS[kind].get().map(reelCard(kind)).join(''); }
+  function renderAll() { Object.keys(LISTS).forEach(renderList); }
+  function focusReel(id) {
+    const s = document.querySelector('[data-id="' + id + '"] > summary');
+    if (s) { s.focus(); s.scrollIntoView({ block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); }
+  }
+
+  // Message bref en bas d'écran, avec un bouton d'action facultatif (« Annuler » par défaut)
+  let undo = null, toastTimer = null;
+  function hideToast() { $('#toast').hidden = true; undo = null; clearTimeout(toastTimer); }
+  function showToast(msg, undoFn, label, ms) {
+    undo = undoFn || null;
+    const b = $('#toast-undo');
+    b.textContent = label || 'Annuler';
+    b.hidden = !undo;
+    $('#toast-msg').textContent = msg;
+    $('#toast').hidden = false;
+    live(msg + (undo ? ' Bouton ' + b.textContent + ' disponible.' : ''));
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(hideToast, ms || 7000);
+  }
+  $('#toast-undo').addEventListener('click', () => { if (undo) undo(); hideToast(); });
+
+  Object.keys(LISTS).forEach(kind => {
+    const L = LISTS[kind], box = $(L.el);
+    const find = id => L.get().find(x => x.id === id);
+
+    box.addEventListener('toggle', e => {
+      const card = e.target.closest && e.target.closest('[data-id]'); if (!card) return;
+      const r = find(+card.dataset.id);
+      if (r) r.open = card.open;
+    }, true);
+
+    box.addEventListener('change', e => {
+      const card = e.target.closest('[data-id]'); if (!card) return;
+      const r = find(+card.dataset.id), t = e.target;
+      if (t.type === 'radio') {
+        const key = t.name.split('-')[1];
+        r[key] = key === 'resolution' ? +t.value : t.value;
+        if (key === 'format' && !optionApplies('visuels', r.format)) r.visuels = false;
+      } else if (t.dataset.opt) {
+        r[t.dataset.opt] = t.checked;
+      }
+      // Le contenu de la carte dépend du format (résolution, visuels) : on la redessine
+      const focusId = t.id;
+      renderList(kind); update();
+      if (kind === 'pack') syncPack();
+      const el = document.getElementById(focusId); if (el) el.focus({ preventScroll: true });
+      const p = document.querySelector('[data-id="' + r.id + '"] [data-price]');
+      if (p) { p.classList.remove('bump'); void p.offsetWidth; p.classList.add('bump'); }
+    });
+
+    box.addEventListener('click', e => {
+      const b = e.target.closest('[data-remove],[data-dup]'); if (!b) return;
+      const list = L.get();
+      const id = +b.closest('[data-id]').dataset.id;
+      const idx = list.findIndex(x => x.id === id);
+      if (b.hasAttribute('data-dup')) {
+        const copy = newReel(list[idx], true);
+        list.splice(idx + 1, 0, copy);
+        renderAll(); update(); syncPack(); focusReel(copy.id);
+        live(L.title + ' ' + (idx + 2) + ' ajouté, copie du ' + L.title.toLowerCase() + ' ' + (idx + 1) + '.');
+        return;
+      }
+      const [removed] = list.splice(idx, 1);
+      renderAll(); update(); syncPack();
+      $(L.add).focus();
+      showToast(L.title + ' ' + (idx + 1) + ' retiré.', () => {
+        const cur = L.get();
+        cur.splice(Math.min(idx, cur.length), 0, removed);
+        renderAll(); update(); syncPack(); focusReel(removed.id);
+        live(L.title + ' ' + (idx + 1) + ' rétabli.');
+      });
+    });
+
+    $(L.add).addEventListener('click', () => {
+      const list = L.get();
+      if (kind === 'pack' && list.length >= state.pack.size) return;
+      const last = list[list.length - 1];
+      list.forEach(r => { r.open = false; });
+      const r = newReel(last, true, kind === 'extra' ? 'vo' : null);
+      list.push(r);
+      renderAll(); update(); syncPack(); focusReel(r.id);
+      live(L.title + ' ' + list.length + ' ajouté.');
+    });
+  });
+
+  $('#suggest').addEventListener('click', e => {
+    const b = e.target.closest('[data-to-pack]'); if (!b) return;
+    const s = packSuggestion(state.reels);
+    if (!s || s.type !== 'exact') return;
+    state.pack = { size: s.cfg.size, reels: s.cfg.reels.map(r => newReel(r)), extras: s.cfg.extras.map(r => newReel(r)) };
+    setMode('pack');
+    renderAll(); syncPack(); update();
+    const h = $('#pack-h'); h.setAttribute('tabindex', '-1'); h.focus();
+    live('Pack ' + s.pack.size + ' reels sélectionné, avec les mêmes reels.');
+  });
+
+  /* ---------- Pack ---------- */
+  $('#packs').innerHTML = CONFIG.packs.map(p =>
+    '<input type="radio" name="pack-size" id="pack-' + p.size + '" value="' + p.size + '"' + (p.size === state.pack.size ? ' checked' : '') + '>' +
+    '<label for="pack-' + p.size + '"' + (p.recommended ? ' class="reco"' : '') + '><span class="p-size">' + p.size + ' reels</span>' +
+    '<span class="p-disc">−' + p.discount + ' %</span>' +
+    (p.recommended ? '<span class="p-reco">★ Recommandé</span>' : '') + '</label>'
+  ).join('');
+
+  // Applique la répartition : les k premiers reels du pack en 100 % IA, les autres en B-roll
+  function applySplit(k) {
+    state.pack.reels.forEach((r, i) => {
+      r.format = i < k ? 'ia' : 'broll';
+      if (!optionApplies('visuels', r.format)) r.visuels = false;
+    });
+  }
+
+  function syncPack() {
+    const p = state.pack, pack = getPack(p.size), n = p.reels.length;
+    const ia = p.reels.filter(r => r.format === 'ia').length, broll = n - ia;
+    $('#pack-' + p.size).checked = true;
+    const range = $('#split-range');
+    range.max = n; range.value = ia;
+    range.setAttribute('aria-valuetext', ia + ' reels 100 % IA, ' + broll + ' reels B-roll');
+    bump($('#split-ia'), ia + ' × 100 % IA');
+    bump($('#split-broll'), broll + ' × B-roll');
+    // Remplissage, bulle et graduations suivent le pouce
+    $('#range-wrap').style.setProperty('--t', n ? ia / n : 0);
+    $('#range-bubble').textContent = ia + ' IA · ' + broll + ' B-roll';
+    const ticks = $('#ticks');
+    if (+ticks.dataset.n !== n) {
+      ticks.dataset.n = n;
+      ticks.innerHTML = n ? Array.from({ length: n + 1 }, (_, i) =>
+        '<i style="left:calc(var(--thumb)/2 + ' + (i / n) + ' * (100% - var(--thumb)))"></i>').join('') : '';
+    }
+    ticks.querySelectorAll('i').forEach((t, i) => t.classList.toggle('on', i <= ia));
+    const base = f => packReelPrice({ format: f, duration: 's25', resolution: 720, script: false, visuels: false }, p.size);
+    $('#split-prices').textContent = 'Base dans ce pack (16 à 25 s, 720p) : ' + formatMAD(base('ia')) + ' le reel 100 % IA, ' + formatMAD(base('broll')) + ' le reel B-roll.';
+    const preset = n && ia === n ? 'ia' : n && ia === 0 ? 'broll' : (n % 2 === 0 && ia === n / 2) ? 'half' : '';
+    document.querySelectorAll('[data-preset]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.preset === preset)));
+    const perks = $('#perks');
+    perks.hidden = false;
+    perks.innerHTML = '<strong>Pack ' + pack.size + ' reels' + (pack.recommended ? ', recommandé' : '') + '</strong><ul>' +
+      pack.perks.map(x => '<li>' + esc(x) + '</li>').join('') + '</ul>';
+  }
+
+  $('#packs').addEventListener('change', e => {
+    const size = +e.target.value, list = state.pack.reels;
+    state.pack.size = size;
+    // Le pack garde exactement N reels : on complète avec une copie du dernier, ou on retire les derniers
+    while (list.length < size) list.push(newReel(list[list.length - 1] || null, false));
+    if (list.length > size) list.length = size;
+    renderAll(); syncPack(); update();
+  });
+  $('#split-range').addEventListener('input', e => {
+    const v = +e.target.value, cur = state.pack.reels.filter(r => r.format === 'ia').length;
+    // Petit retour haptique à chaque cran (téléphones Android qui le permettent)
+    if (v !== cur && navigator.vibrate && !matchMedia('(prefers-reduced-motion: reduce)').matches) { try { navigator.vibrate(6); } catch (_) {} }
+    applySplit(v); renderList('pack'); syncPack(); update();
+  });
+  const wrap = $('#range-wrap');
+  ['pointerdown', 'touchstart'].forEach(ev => $('#split-range').addEventListener(ev, () => wrap.classList.add('dragging'), { passive: true }));
+  ['pointerup', 'pointercancel', 'touchend', 'blur'].forEach(ev => $('#split-range').addEventListener(ev, () => wrap.classList.remove('dragging')));
+  document.querySelector('.presets').addEventListener('click', e => {
+    const b = e.target.closest('[data-preset]'); if (!b) return;
+    const n = state.pack.reels.length;
+    applySplit({ ia: n, broll: 0, half: Math.floor(n / 2) }[b.dataset.preset]);
+    renderList('pack'); syncPack(); update();
+  });
+
+  /* ---------- Mode et services ---------- */
+  function setMode(m) {
+    state.mode = m;
+    $('#mode-' + m).checked = true;
+    $('#panel-carte').hidden = m !== 'carte';
+    $('#panel-pack').hidden = m !== 'pack';
+  }
+  document.querySelectorAll('input[name="mode"]').forEach(r => r.addEventListener('change', e => {
+    hideToast();
+    setMode(e.target.value);
+    update();
+  }));
+  $('#maint-amt').textContent = formatMAD(CONFIG.recurring.maintenance) + ' / mois';
+  $('#vf-amt').textContent = formatMAD(CONFIG.recurring.voiceflow) + ' / mois';
+
+  /* ---------- Récapitulatif ---------- */
+  const lineHtml = l => '<li><span class="d">' + esc(l.label) + (l.detail ? '<small>' + esc(l.detail) + '</small>' : '') + '</span><span class="v">' + formatMAD(l.amount) + '</span></li>';
+
+  function blockedText(r) {
+    if (r.problem === 'min') return 'Une commande comprend au moins ' + CONFIG.minReels + ' reels. Ajoutez ' + plural(CONFIG.minReels - r.count) + ' pour voir le récapitulatif.';
+    if (r.problem === 'format') return 'Les reels voix off ne peuvent pas faire partie d’un pack. Ajoutez-les en plus, à l’unité.';
+    if (r.problem === 'count') {
+      const d = r.pack.size - r.packCount;
+      return 'Le pack ' + r.pack.size + ' compte ' + plural(r.packCount) + ' sur ' + r.pack.size + '. ' +
+        (d > 0 ? 'Ajoutez ' + plural(d) : 'Retirez ' + plural(-d)) + ' pour voir le récapitulatif.';
+    }
+    return '';
+  }
+
+  function update() {
+    const q = quoteAll(state), r = q.reels, m = q.month;
+    $('#carte-count').textContent = plural(state.reels.length);
+    $('#mb-l').textContent = 'Total du mois · ' + plural(r.count);
+    $('#recap-mode').textContent = r.mode === 'carte' ? 'À l’unité' : 'Pack ' + r.pack.size + ' reels';
+
+    const blocked = !r.valid;
+    const bl = $('#recap-blocked');
+    bl.hidden = !blocked;
+    bl.textContent = blocked ? blockedText(r) : '';
+    $('#recap-body').hidden = blocked;
+
+    $('#recap-lines').innerHTML = r.lines.map(lineHtml).join('');
+    $('#recap-subtotal').textContent = formatMAD(m.reels);
+    $('#recap-rec').innerHTML = [
+      { label: 'Sous-total reels', amount: m.reels },
+      { label: 'Maintenance', detail: 'par mois, toujours incluse', amount: m.maintenance }
+    ].map(lineHtml).join('');
+    $('#t-month').textContent = formatMAD(m.total);
+    $('#recap-vf').innerHTML = lineHtml({ label: 'Abonnement Voiceflow', detail: 'par mois, refacturé au prix coûtant', amount: m.voiceflow });
+    // Grand total façon « 33 % » : chiffre fin, unité réduite
+    bump($('#t-main'), blocked ? '—' : formatMAD(m.total),
+      blocked ? '<span>—</span>' : '<span>' + formatNumber(m.total) + '</span><small>MAD</small>' + ARROW);
+    $('#t-main-sub').textContent = r.mode === 'pack' ? 'Reels et maintenance, pack réglé d’avance le 1er du mois' : 'Reels et maintenance';
+    bump($('#t-rec'), formatMAD(m.grandTotal));
+    $('#recap-delivery').textContent = deliveryText(r.deliveryDays);
+    $('#legal-maint').textContent = LEGAL.maintenance;
+    $('#legal-tva').textContent = LEGAL.tva;
+
+    // Un trait par reel : plein pour 100 % IA, atténué pour B-roll, contour pour voix off
+    $('#dashes').innerHTML = r.formats.map(f => '<i' + (f === 'broll' ? ' class="b"' : f === 'vo' ? ' class="v"' : '') + '></i>').join('');
+    $('#legend-vo').hidden = !r.formats.includes('vo');
+
+    const cmp = $('#recap-compare');
+    if (r.mode === 'pack' && r.saving > 0) {
+      cmp.hidden = false;
+      cmp.innerHTML = 'À l’unité, les reels du pack coûteraient <strong>' + formatMAD(r.carteTotal) + '</strong>. Avec le pack, vous économisez <strong>' + formatMAD(r.saving) + '</strong>.';
+    } else cmp.hidden = true;
+
+    bump($('#mb-v'), blocked ? '—' : formatMAD(m.total));
+
+    // Messages près des boutons quand il manque des reels
+    const missing = CONFIG.minReels - state.reels.length;
+    const cm = $('#carte-min');
+    cm.hidden = missing <= 0;
+    cm.textContent = missing > 0 ? 'Il manque ' + plural(missing) + ' pour atteindre le minimum de ' + CONFIG.minReels + ' reels par commande.' : '';
+    const pk = state.pack, pd = pk.size - pk.reels.length;
+    $('#pack-count').textContent = pk.reels.length + ' / ' + pk.size + ' reels';
+    $('#add-pack-reel').disabled = pd <= 0;
+    $('#pack-min').hidden = pd === 0;
+    $('#pack-min').textContent = pd > 0 ? 'Le pack ' + pk.size + ' doit compter exactement ' + pk.size + ' reels : ajoutez ' + plural(pd) + '.' : '';
+    $('#extras-count').hidden = !pk.extras.length;
+    $('#extras-count').textContent = plural(pk.extras.length);
+
+    // Suggestion de pack (mode à l'unité)
+    const sg = $('#suggest'), s = state.mode === 'carte' ? packSuggestion(state.reels) : null;
+    if (s && s.type === 'exact') {
+      sg.hidden = false;
+      sg.innerHTML = '<p><strong>Ces reels en pack ' + s.pack.size + ' : ' + formatMAD(s.packTotal) + ' au lieu de ' + formatMAD(s.carteTotal) + '.</strong> ' +
+        'Vous économisez ' + formatMAD(s.saving) + '.' + (s.cfg.extras.length ? ' Les reels voix off restent à l’unité, en plus du pack.' : '') + '</p>' +
+        '<button type="button" class="btn" data-to-pack>Passer au pack ' + s.pack.size + ' reels</button>';
+    } else if (s && s.type === 'near') {
+      sg.hidden = false;
+      sg.innerHTML = '<p>Avec 1 reel 100 % IA ou B-roll de plus, vous pouvez passer au pack ' + s.pack.size + ' reels (−' + s.pack.discount + ' %).</p>';
+    } else { sg.hidden = true; sg.innerHTML = ''; }
+
+    // La configuration est gardée dans l'adresse (rechargement, retour depuis WhatsApp)
+    try { history.replaceState(null, '', '#' + encodeState(state)); } catch (e) {}
+
+    const wa = $('#wa');
+    if (blocked) { wa.setAttribute('aria-disabled', 'true'); wa.removeAttribute('href'); }
+    else { wa.removeAttribute('aria-disabled'); wa.href = whatsAppUrl(state); }
+    $('#print').disabled = blocked;
+  }
+
+  // Lien vers les briefs : client et commande repris de l'adresse du simulateur
+  $('#brief').href = briefUrl(location.search);
+
+  // Envoi WhatsApp : le lien s'ouvre normalement, et le message est aussi copié.
+  // Si WhatsApp s'ouvre sans le texte (fréquent avec l'application de bureau), il suffit de le coller.
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text).then(() => true, () => legacyCopy(text));
+    return Promise.resolve(legacyCopy(text));
+  }
+  function legacyCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch (e) {}
+    ta.remove(); return ok;
+  }
+  $('#wa').addEventListener('click', e => {
+    const a = e.currentTarget;
+    if (a.getAttribute('aria-disabled') === 'true') { e.preventDefault(); return; }
+    const desktop = matchMedia('(hover: hover) and (pointer: fine)').matches;
+    const web = whatsAppWebUrl(state);
+    copyText(whatsAppText(state)).then(ok => {
+      const msg = ok
+        ? 'Message copié. Si WhatsApp s’ouvre sans le texte, collez-le' + (desktop ? ' (Ctrl+V).' : '.')
+        : 'Si WhatsApp s’ouvre sans le texte, utilisez WhatsApp Web.';
+      showToast(msg, desktop ? () => window.open(web, '_blank', 'noopener') : null, 'WhatsApp Web', 12000);
+    });
+  });
+
+
+  /* ---------- Parcours « Comment ça se passe » : une étape à la fois ---------- */
+  (function () {
+    const src = $('#steps-src');
+    const steps = [...src.children].map(li => ({ t: li.querySelector('strong').textContent, d: li.querySelector('p').textContent }));
+    if (!steps.length) return;
+    const CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+    const NEXT_ICO = '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+    const dots = $('#st-dots'), card = $('#st-card'), prev = $('#st-prev'), next = $('#st-next');
+    let cur = 0;
+
+    dots.innerHTML = steps.map((s, i) =>
+      '<button type="button" class="st-dot" data-i="' + i + '" aria-label="Étape ' + (i + 1) + ' : ' + esc(s.t) + '"></button>').join('');
+    const dotEls = [...dots.children];
+
+    function go(i, dir) {
+      if (i < 0 || i >= steps.length) return;
+      const from = cur; cur = i;
+      dotEls.forEach((d, k) => {
+        d.classList.toggle('done', k < cur);
+        if (k === cur) d.setAttribute('aria-current', 'step'); else d.removeAttribute('aria-current');
+        d.tabIndex = k === cur ? 0 : -1;   // flèches du clavier dans le groupe
+        d.innerHTML = k < cur ? CHECK : String(k + 1);
+      });
+      $('#st-fill').style.width = (steps.length > 1 ? cur / (steps.length - 1) * 100 : 100) + '%';
+      $('#st-count').textContent = 'Étape ' + (cur + 1) + ' sur ' + steps.length;
+      $('#st-title').textContent = steps[cur].t;
+      $('#st-desc').textContent = steps[cur].d;
+      prev.disabled = cur === 0;
+      const last = cur === steps.length - 1;
+      next.innerHTML = last ? 'Voir mon récapitulatif' + NEXT_ICO : 'Suivant' + NEXT_ICO;
+      if (dir !== undefined && from !== cur) {
+        card.classList.remove('in-next', 'in-prev'); void card.offsetWidth;
+        card.classList.add(dir > 0 ? 'in-next' : 'in-prev');
+        live('Étape ' + (cur + 1) + ' sur ' + steps.length + ' : ' + steps[cur].t + '. ' + steps[cur].d);
+      }
+    }
+
+    prev.addEventListener('click', () => go(cur - 1, -1));
+    next.addEventListener('click', () => {
+      if (cur < steps.length - 1) return go(cur + 1, 1);
+      const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      $('#recap').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+    });
+    dots.addEventListener('click', e => { const d = e.target.closest('.st-dot'); if (d) go(+d.dataset.i, +d.dataset.i > cur ? 1 : -1); });
+    dots.addEventListener('keydown', e => {
+      const k = { ArrowRight: 1, ArrowLeft: -1, Home: -cur, End: steps.length - 1 - cur }[e.key];
+      if (k === undefined) return;
+      e.preventDefault();
+      const n = Math.max(0, Math.min(steps.length - 1, cur + k));
+      go(n, n > cur ? 1 : -1); dotEls[cur].focus();
+    });
+
+    // Glisser la carte à gauche / à droite
+    let x0 = null, y0 = null;
+    card.addEventListener('pointerdown', e => { x0 = e.clientX; y0 = e.clientY; });
+    card.addEventListener('pointerup', e => {
+      if (x0 === null) return;
+      const dx = e.clientX - x0, dy = e.clientY - y0; x0 = null;
+      if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) go(cur + (dx < 0 ? 1 : -1), dx < 0 ? 1 : -1);
+    });
+    card.addEventListener('pointercancel', () => { x0 = null; });
+
+    // Téléphone : une étape à la fois ; bureau (≥ 960 px) : frise complète (voir CSS)
+    $("#etapes").classList.add("js-stepper");
+    $('#stepper').hidden = false;
+    go(0);
+  })();
+
+  $('#print').addEventListener('click', () => {
+    $('#print-date').textContent = 'Simulation du ' + new Date().toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) + ' · prix en MAD';
+    window.print();
+  });
+
+  // Barre mobile : masquée quand le récapitulatif est visible
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(([en]) => $('#minibar').classList.toggle('hide', en.isIntersecting), { threshold: 0.05 }).observe($('#recap'));
+  }
+
+  if (GREETING_NAME) {
+    $('#hello-txt').textContent = 'Bonjour ' + GREETING_NAME;
+    $('#hello-av').textContent = GREETING_NAME.charAt(0).toUpperCase();
+    $('#hello').hidden = false;
+  }
+  setMode(state.mode);
+  renderAll();
+  syncPack();
+  update();
+
+  // Mode test : ajouter ?test=1 à l'adresse (résultats aussi dans la console)
+  window.MSA = { CONFIG, runTests, quoteCarte, quotePack, buildWhatsAppText, state };
+  if (/[?&]test=1\b/.test(location.search)) {
+    const t = runTests();
+    console.table(t.results);
+    console.log('Tests : ' + t.passed + ' / ' + t.total);
+    $('#tests-out').innerHTML = '<div class="tests" role="region" aria-label="Résultats des tests"><strong>Tests : ' + t.passed + ' / ' + t.total + ' réussis</strong><table><thead><tr><th>Cas</th><th>Obtenu</th><th>Attendu</th><th></th></tr></thead><tbody>' +
+      t.results.map(r => '<tr><td>' + esc(r.name) + '</td><td>' + esc(r.got) + '</td><td>' + esc(r.want) + '</td><td>' + (r.ok ? 'OK' : 'ÉCHEC') + '</td></tr>').join('') + '</tbody></table></div>';
+  }
+})();
+</script>
+</body>
+</html>
