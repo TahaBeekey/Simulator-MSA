@@ -58,9 +58,11 @@ svg{display:block}
 .frame::after{width:560px;height:560px;right:-260px;top:40%;background:rgba(220,213,201,.9)}
 .content{min-width:0}
 
+/* Bureau : une seule colonne centrée, lue de haut en bas, qui se termine par le total */
 @media (min-width:960px){
-  body{background:var(--os-deep);padding:24px;padding-bottom:24px}
-  .frame{max-width:1360px;margin:0 auto;background:var(--os);border-radius:40px;padding:28px 36px 0;box-shadow:0 1px 0 rgba(255,255,255,.7) inset,0 40px 80px -40px rgba(13,14,17,.35)}
+  body{background:var(--os-deep);padding:24px;padding-bottom:104px}
+  .content{max-width:860px;margin:0 auto}
+  .frame{max-width:1000px;margin:0 auto;background:var(--os);border-radius:40px;padding:28px 36px 0;box-shadow:0 1px 0 rgba(255,255,255,.7) inset,0 40px 80px -40px rgba(13,14,17,.35)}
 }
 
 /* Barre du haut : une ligne compacte */
@@ -91,10 +93,13 @@ svg{display:block}
 /* Mise en page */
 .layout{display:grid;grid-template-columns:minmax(0,1fr);gap:24px;padding:16px 0 40px}
 @media (min-width:960px){
-  .layout{grid-template-columns:minmax(0,1fr) 400px;align-items:start;gap:28px;padding-top:20px}
-  .recap{position:sticky;top:24px;max-height:calc(100vh - 48px);overflow:auto;scrollbar-width:thin}
+  .layout{gap:28px;padding-top:20px}
+  .recap{padding:28px 32px}
 }
 .stack>*+*{margin-top:24px}
+/* Repères d'étape : la page se lit comme un parcours en 4 temps */
+.step-k{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px}
+.recap .step-k{color:var(--on-dark-2);margin-bottom:10px}
 .section-title{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px}
 
 .badge{display:inline-flex;align-items:center;min-height:24px;padding:2px 10px;border-radius:999px;background:var(--encre);color:var(--os);font-size:.72rem;font-weight:700;white-space:nowrap}
@@ -316,13 +321,14 @@ input[type=range]:focus-visible::-moz-range-thumb{outline:3px solid var(--encre)
 .minibar .mb-v{font-size:1.25rem;font-weight:700;color:var(--cuivre);white-space:nowrap;letter-spacing:-.02em}
 .minibar a{margin-left:auto;font-size:.85rem;font-weight:600;min-height:44px;display:flex;align-items:center;padding:0 16px;border-radius:999px;background:var(--encre);color:var(--os);text-decoration:none}
 .minibar.hide{transform:translateY(140%);opacity:0}
-@media (min-width:960px){.minibar{display:none}}
+/* Bureau aussi : le total courant reste visible en bas, le détail arrive à la fin */
+@media (min-width:960px){.minibar{left:50%;right:auto;width:min(560px,calc(100% - 48px));transform:translateX(-50%);bottom:24px}.minibar.hide{transform:translate(-50%,140%)}}
 
 /* Toast */
 .toast{position:fixed;left:16px;right:16px;bottom:calc(92px + env(safe-area-inset-bottom));max-width:420px;margin:0 auto;background:rgba(13,14,17,.88);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);color:var(--os);border-radius:18px;padding:8px 8px 8px 18px;display:flex;align-items:center;gap:12px;z-index:20;font-size:.9rem;box-shadow:0 16px 36px -12px rgba(13,14,17,.5)}
 .toast button{margin-left:auto;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.5);color:var(--os);border-radius:999px;min-height:44px;padding:6px 18px;font:inherit;font-weight:600;cursor:pointer}
 .toast button:focus-visible{outline-color:var(--os)}
-@media (min-width:960px){.toast{bottom:32px}}
+@media (min-width:960px){.toast{bottom:104px}}
 
 /* Comment ça se passe */
 .how{padding:24px 0 40px}
@@ -440,7 +446,8 @@ input[type=range]:focus-visible::-moz-range-thumb{outline:3px solid var(--encre)
       <div class="config stack" id="commande">
 
         <section aria-labelledby="mode-h">
-          <h2 id="mode-h" class="sr-only">Type de commande</h2>
+          <p class="step-k" aria-hidden="true">Étape 1 sur 4</p>
+          <h2 id="mode-h" class="sr-only">Étape 1 : type de commande</h2>
           <fieldset class="tabs glass blur">
             <legend class="sr-only">Type de commande</legend>
             <input type="radio" name="mode" id="mode-carte" value="carte" checked>
@@ -453,6 +460,7 @@ input[type=range]:focus-visible::-moz-range-thumb{outline:3px solid var(--encre)
 
         <!-- Mode à l'unité -->
         <section id="panel-carte" aria-labelledby="carte-h">
+          <p class="step-k">Étape 2 sur 4</p>
           <div class="section-title">
             <h2 id="carte-h">Vos reels</h2>
             <span class="badge" id="carte-count"></span>
@@ -470,6 +478,7 @@ input[type=range]:focus-visible::-moz-range-thumb{outline:3px solid var(--encre)
 
         <!-- Mode pack -->
         <section id="panel-pack" aria-labelledby="pack-h" hidden>
+          <p class="step-k">Étape 2 sur 4</p>
           <div class="section-title"><h2 id="pack-h">Votre pack mensuel</h2></div>
 
           <div class="card">
@@ -542,6 +551,7 @@ input[type=range]:focus-visible::-moz-range-thumb{outline:3px solid var(--encre)
         </details>
 
         <section class="card" id="services" aria-labelledby="rec-h">
+          <p class="step-k">Étape 3 sur 4</p>
           <h2 id="rec-h">Services mensuels</h2>
           <div class="check" style="cursor:default;margin-top:6px">
             <span class="ph" aria-hidden="true"></span>
@@ -557,6 +567,7 @@ input[type=range]:focus-visible::-moz-range-thumb{outline:3px solid var(--encre)
       </div>
 
       <aside class="recap" id="recap" aria-labelledby="recap-h">
+        <p class="step-k">Étape 4 sur 4 · votre total</p>
         <div class="r-top">
           <span class="r-ico" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10 9.5v5l4.5-2.5z"/></svg></span>
           <h2 id="recap-h">Récapitulatif</h2>
@@ -678,7 +689,7 @@ input[type=range]:focus-visible::-moz-range-thumb{outline:3px solid var(--encre)
 
 <div class="minibar no-print" id="minibar" aria-hidden="true">
   <div><div class="mb-l" id="mb-l">Total de la commande</div><div class="mb-v" id="mb-v"></div></div>
-  <a href="#recap" tabindex="-1">Récapitulatif</a>
+  <a href="#recap" tabindex="-1" id="mb-go">Voir le détail</a>
 </div>
 
 <script>
@@ -1385,6 +1396,12 @@ if (typeof document !== 'undefined') (function () {
     else { wa.removeAttribute('aria-disabled'); wa.href = whatsAppUrl(state); }
     $('#print').disabled = blocked;
   }
+
+  $('#mb-go').addEventListener('click', e => {
+    e.preventDefault();
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    $('#recap').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+  });
 
   // Lien vers les briefs : client et commande repris de l'adresse du simulateur
   $('#brief').href = briefUrl(location.search);
